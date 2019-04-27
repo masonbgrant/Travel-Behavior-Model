@@ -1,0 +1,2525 @@
+---
+title: "Travel Behavior Model Using Origin-Destination Data from Twitter"
+author: Mason Grant
+output:
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+---
+
+```{r include = FALSE}
+library(sp)
+library(sf)
+library(dplyr)
+library(stplanr)
+library(tmap)
+library(readr)
+library(maps)
+library(raster)
+library(rgdal)
+library(RgoogleMaps)
+library(ggmap)
+library(mapview)
+library(geosphere)
+library(gmapsdistance)
+library(kableExtra)
+library(lubridate)
+library(spatialEco)
+library(leaflet)
+library(tidyr)
+library(classInt)
+library(RColorBrewer)
+library(data.table)
+library(spgwr)
+library(htmltools)
+```
+
+# Model Overview
+
+This script analyzes Origin-Destination (OD) data gathered from Twitter. The origin locations are collected within a given radius of a desired location and the destination locations are collected from the user timelines after an origin tweet has been observed. The OD data is cleaned based on certain characteristics so that, in the end, the OD Matrix consists of synchronous origin-destination tweet pairs which represent a trip taken by the user.
+
+The model visualizes the OD data and calculates travel summary statistics including euclidean distance, route distance, time difference between tweets, estimated route time, and more. The model aggregates the destination data into Public Use Microdata Areas (PUMAs) within LA county to determine the density of destinations throughout the region. Once the PUMAs have been visualized, the model imports and analyzes demographic data, gathered from the 2017 American Community Survey Estimates, to visualize the characteristics of the PUMA regions. Finally, the model exports the PUMA shapefile, including its attributes, to run regression analysis in ArcGIS Pro.
+
+The final results show how destination locations are concentrated and the demographic characteristics throughout the region. The results are used to gain a better understanding of where people are traveling and why they are traveling there. The results can be used to better understand the travel behaviors of individuals and cultivate interest and discussion surrounding efficient mobility solutions.
+
+The following sections show the results of a model demonstration, the complete R workflow for the model, and a conclusion and next steps moving forward.  
+
+```{r warning=FALSE, message=FALSE, include=FALSE}
+# Make sure to set working directory
+
+# ORIGIN DATA
+O.data <- read_csv("Data/O_Data3.csv")
+# 1,439 observations
+
+# DESTINATION DATA
+D.data <- read_csv("Data/D_Data3.csv")
+## 5,365 observations
+
+# PUMA SHAPEFILE
+puma.spdf <- shapefile("Data/PUMA84.2/LA_puma.shp")
+
+# AFF POPULATION DATA
+AFF.pop <- read_csv("Data/ACS_17_5YR_B01003/ACS_17_5YR_B01003_with_ann.csv")
+
+## AFF INCOME DATA
+AFF.inc <- read_csv("Data/Income per Household/ACS_17_5YR_S1902_with_ann.csv")
+
+## VEHICLE DATA
+AFF.veh <- read_csv("Data/Vehicles avail by tenure/ACS_17_5YR_B25046_with_ann.csv")
+
+## AGE AND SEX DATA
+AFF.age.sex <- read_csv("Data/Age and Sex/ACS_17_5YR_S0101_with_ann.csv")
+
+## AFF EDUCATION DATA
+AFF.edu <- read_csv("Data/Education/ACS_17_5YR_S1501_with_ann.csv")
+
+## AFF RACE DATA
+AFF.race <- read_csv("Data/Race/ACS_17_5YR_B03002_with_ann.csv")
+
+
+
+### O DATA ###
+
+# O.data
+# 1,439 observations
+
+# replace box_XY with geo_XY if applicable
+O.data$O_box_X <- ifelse(is.na(O.data$O_geo_X), O.data$O_box_X, O.data$O_geo_X)
+O.data$O_box_Y <- ifelse(is.na(O.data$O_geo_Y), O.data$O_box_Y, O.data$O_geo_Y)
+
+# remove coordinates with NA values
+O.data <- O.data[!is.na(O.data$O_box_X),]
+# 1082 observations (357 removed)
+
+# Filter out duplicate twitter handles (getting first tweet that was posted)
+O.data <- O.data[order(O.data$ID, O.data$O_time), ]
+O.data <- O.data[!duplicated(O.data$ID), ]
+# 510 observations (572 removed)
+
+#  Reformat time columns
+O.time.GMT <- strptime(O.data$O_time, "%a %b %d %H:%M:%S %z %Y", tz = "GMT")
+
+O.dt.GMT <- as.POSIXct(O.time.GMT, tz = "GMT")
+
+O.data$O_time <- as.POSIXct(format(O.dt.GMT, tz = "America/Los_Angeles", usetz = TRUE))
+
+O.data$O_date <- format(as.POSIXct(strptime(O.data$O_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%Y-%m-%d")
+O.data$O_time2 <- format(as.POSIXct(strptime(O.data$O_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%H:%M:%S")
+
+O.data$O_date <- as.Date(O.data$O_date)
+
+
+
+### D DATA ###
+
+# D.data
+# 5,365 Observations
+
+# replace box_XY with geo_XY if applicable
+D.data$D_box_X <- ifelse(is.na(D.data$D_geo_X), D.data$D_box_X, D.data$D_geo_X)
+D.data$D_box_Y <- ifelse(is.na(D.data$D_geo_Y), D.data$D_box_Y, D.data$D_geo_Y)
+
+### Clip D points inside of PUMA Shapefile ###
+# create spdf from D.data & project
+D.spdf <- D.data
+coordinates(D.spdf) <- ~D_box_Y + D_box_X
+projection(D.spdf) <- CRS("+proj=longlat")
+
+# PUMA SHAPEFILE
+# puma.spdf
+
+# project PUMA
+projection(puma.spdf)=projection(D.spdf)
+
+# clip D points inside of PUMA
+D.spdf <- D.spdf[puma.spdf, ]
+# 3878 observations (removed 1487)
+
+# convert .spdf back to regular dataframe
+D.data <- as.data.frame(D.spdf)
+
+#  Reformat time columns
+D.time.GMT <- strptime(D.data$D_time, "%a %b %d %H:%M:%S %z %Y", tz = "GMT")
+
+D.dt.GMT <- as.POSIXct(D.time.GMT, tz = "GMT")
+
+D.data$D_time <- as.POSIXct(format(D.dt.GMT, tz = "America/Los_Angeles", usetz = TRUE))
+
+D.data$D_date <- format(as.POSIXct(strptime(D.data$D_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%Y-%m-%d")
+D.data$D_time2 <- format(as.POSIXct(strptime(D.data$D_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%H:%M:%S")
+
+D.data$D_date <- as.Date(D.data$D_date)
+
+O.data$O_date <- as.POSIXct(O.data$O_date)
+
+
+
+### OD DATA ###
+# Merge O and D datasets by Twitter ID(handle)
+OD.matrix <- merge(O.data, D.data, by= "ID")
+# 3878 observations
+
+# Determine if the D tweet was made after the O tweet and make field $OD_GreaterTime as TRUE or FALSE
+for (i in 1:nrow(OD.matrix)) {
+  t <- difftime(OD.matrix[i,"D_time"], OD.matrix[i,"O_time"], units="mins")
+  OD.matrix$OD_TimeDif[i] <- t
+}
+# remove tweets that were not made after O tweet 
+OD.matrix <- OD.matrix[!(OD.matrix$OD_TimeDif <= 0),]
+# 1349 observations (2529 removed)
+
+# remove tweets that were made over 24 hours (1,440 mins) after O tweet
+OD.matrix <- OD.matrix[!(OD.matrix$OD_TimeDif >= 1440),]
+# 919 observations (430 removed)
+
+# Remove Destination points that are within LAX
+OD.matrix <- OD.matrix[!(OD.matrix$D_box_X < 33.97355 & 
+                         OD.matrix$D_box_X > 33.90861 & 
+                         OD.matrix$D_box_Y < -118.34129 & 
+                         OD.matrix$D_box_Y > -118.45322), ]
+# 628 observation (291 removed)
+
+# order tweets by ID and time, so the next line selects the most recent tweet after origin was tweeted 
+OD.matrix <- OD.matrix[order(OD.matrix$ID, OD.matrix$OD_TimeDif), ]
+# remove duplicates which then leaves D tweets that were posted right after the O tweet
+OD.matrix <- OD.matrix[!duplicated(OD.matrix$ID), ]
+# 136 observations (492 removed)
+
+# put D data back in D.data (includes OD_TimeDif)
+cols <- c(1, 13:24)
+D.data <- OD.matrix[,cols]
+
+# out O data back in O.data
+O.data <- OD.matrix[,1:12]
+
+# Create new OD.matrix with new D.data
+OD.matrix <- merge(O.data, D.data, by= "ID")
+
+
+
+
+####### Project Data #######
+# Promote OD data to SpatialPointsDataFrame
+# Promot Origin and Destination data to spdf using XY coords
+O.spdf <- O.data 
+D.spdf <- D.data
+coordinates(O.spdf) <- ~O_box_Y + O_box_X
+coordinates(D.spdf) <- ~D_box_Y + D_box_X
+
+## identify CRS O D Data
+projection(O.spdf) <- CRS("+proj=longlat")
+projection(D.spdf) <- CRS("+proj=longlat")
+
+## Project O D Data
+D.spdf.utm <- spTransform(D.spdf, CRS("+proj=utm +north +zone=11 +ellps=WGS84")) 
+O.spdf.utm <- spTransform(O.spdf, CRS("+proj=utm +north +zone=11 +ellps=WGS84")) 
+
+## Project polygons to UTM11N
+projection(puma.spdf)=projection(D.spdf.utm)
+## Project O D Data to UTM11N
+projection(O.spdf)=projection(D.spdf.utm)
+projection(D.spdf)=projection(D.spdf.utm)
+
+
+
+##### Calculate OD Stats #####
+### Euclidean Distance ###
+# Calculate new column for Euclidean Distance in the matrix 
+# Run loop to create Euclidean distance (meters) for each row in the matrix
+for (i in 1:nrow(OD.matrix)) {
+  n <- distm(OD.matrix[i,c("O_box_Y","O_box_X")], OD.matrix[i,c("D_box_Y","D_box_X")], fun = distHaversine)
+  OD.matrix$OD_EucDist_m[i] <- n
+}
+
+# convert EucDistM to Euc Dist in Miles (1,609.344 meters in 1 mile)
+OD.matrix$OD_EucDist_Mi <- (OD.matrix$OD_EucDist_m / 1609.344)
+
+### Route Distance & duration ###
+# Put lat long in one column
+OD.matrix$O_latlong <- do.call(paste0, OD.matrix[c("O_box_X", "O_box_Y")])
+OD.matrix$D_latlong <- do.call(paste0, OD.matrix[c("D_box_X", "D_box_Y")])
+
+OD.matrix$O_latlong <- paste(OD.matrix$O_box_X, '+', OD.matrix$O_box_Y, sep = '')
+OD.matrix$D_latlong <- paste(OD.matrix$D_box_X, '+', OD.matrix$D_box_Y, sep = '')
+
+# Calculate route distance and route time from google API
+set.api.key("AIzaSyDqvlZEhRNWN_ddVZ4wrJg7vUHFMvOz_ko")
+for (i in 1:nrow(OD.matrix)) {
+  d <- gmapsdistance(origin = OD.matrix[i,"O_latlong"], destination = OD.matrix[i,"D_latlong"], mode = "driving")
+  OD.matrix$OD_RtDist_mi[i] <- d$Distance
+  OD.matrix$OD_RtTime_min[i] <- d$Time
+}
+
+# Convert to miles and minutes as opposed to meters and seconds
+OD.matrix$OD_RtDist_mi <- OD.matrix$OD_RtDist / 1609.344
+OD.matrix$OD_RtTime_min <- OD.matrix$OD_RtTime / 60
+
+##### CALCULATE Statistics #####
+
+### Average Euclidean Distance (miles) ###
+Avg.EucDist <- round(mean(OD.matrix$OD_EucDist_Mi), digits=2)
+
+### Average time difference between tweets (minutes) ###
+Avg.tw.TimeDiff <- round(mean(OD.matrix$OD_TimeDif), digits=2)
+
+### Average route distance (miles) ### 
+Avg.RtDist <- round(mean(OD.matrix$OD_RtDist_mi), digits=2)
+
+### Average trip time by driving (minutes) ### 
+Avg.RtTime <- round(mean(OD.matrix$OD_RtTime_min), digits=2)
+
+## Percent of trips less than 2 mile Route Distance
+OD_count <- count(OD.matrix)
+
+less_5mi <- sum(OD.matrix$OD_RtDist_mi < 5)
+less_5mi <- (less_5mi / OD_count) * 100
+less_5mi <- round(less_5mi, digits = 1)
+less_5mi <- paste(less_5mi, "%")
+  
+btw_5_10mi <- sum(OD.matrix$OD_RtDist_mi >= 5 & OD.matrix$OD_RtDist_mi < 10)
+btw_5_10mi <- (btw_5_10mi / OD_count) * 100
+btw_5_10mi <- round(btw_5_10mi, digits = 1)
+btw_5_10mi <- paste(btw_5_10mi, "%")
+
+btw_10_20mi <- sum(OD.matrix$OD_RtDist_mi >= 10 & OD.matrix$OD_RtDist_mi < 20)
+btw_10_20mi <- (btw_10_20mi / OD_count) * 100
+btw_10_20mi <- round(btw_10_20mi, digits = 1)
+btw_10_20mi <- paste(btw_10_20mi, "%")
+
+btw_20_30mi <- sum(OD.matrix$OD_RtDist_mi >= 20 & OD.matrix$OD_RtDist_mi < 30)
+btw_20_30mi <- (btw_20_30mi / OD_count) * 100
+btw_20_30mi <- round(btw_20_30mi, digits = 1)
+btw_20_30mi <- paste(btw_20_30mi, "%")
+
+grt_30mi <- sum(OD.matrix$OD_RtDist_mi >= 30)
+grt_30mi <- (grt_30mi / OD_count) * 100
+grt_30mi <- round(grt_30mi, digits = 1)
+grt_30mi <- paste(grt_30mi, "%")
+  
+
+
+
+### FIND POINT DATA & CLEAN PUMA ATTRIBUTE DATA ###
+
+# Figure out how many DESTINATION points in each puma polygon 
+over.data <- over(D.spdf, puma.spdf[,"GEOID10"])
+D.data$D_GEOID <- over.data$GEOID10
+count.data <- D.data %>% group_by(D_GEOID) %>% count()
+puma.spdf2 <- merge(puma.spdf, count.data, by.x = "GEOID10", by.y = "D_GEOID")
+puma.spdf <- puma.spdf2
+puma.spdf$n[is.na(puma.spdf$n)] <- 0
+setnames(as.data.frame(puma.spdf), old=c("n"), new=c("Dest_pt_count"))
+
+# Figure out how many ORIGIN points in each puma polygon 
+over.data <- over(O.spdf, puma.spdf[,"GEOID10"])
+O.data$O_GEOID <- over.data$GEOID10
+count.data <- O.data %>% group_by(O_GEOID) %>% count()
+puma.spdf2 <- merge(puma.spdf, count.data, by.x = "GEOID10", by.y = "O_GEOID")
+puma.spdf <- puma.spdf2
+puma.spdf$n[is.na(puma.spdf$n)] <- 0
+setnames(as.data.frame(puma.spdf), old=c("n"), new=c("Origin_pt_count"))
+
+# Create for plot
+# Find JENKS classes - for this, the data is too small and wants two zeros but we can still view the classes
+#breaks.dest <-classIntervals(puma.spdf$Dest_pt_count, n=5, style="jenks")
+#breaks.dest <- breaks.dest$brks
+#View(breaks.dest$brks)
+breaks.dest <- c(0,1,3,11,53)
+pal.dest <- colorBin("YlOrRd", domain = puma.spdf$Dest_pt_count, bins = breaks.dest)
+labels.dest <- sprintf("<div style = 'overflow-wrap: anywhere;'> <strong>%s</strong><br/>%g destinations</div>",
+                  puma.spdf$NAME, 
+                  puma.spdf$Dest_pt_count) %>% lapply(htmltools::HTML)
+
+
+# Create stats per PUMA
+over.data <- over(D.spdf, puma.spdf[,"GEOID10"])
+OD.matrix$D_GEOID <- over.data$GEOID10
+# Euc Distance
+AvgEuc_byPuma <- aggregate(OD.matrix[,"OD_EucDist_Mi"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(AvgEuc_byPuma,
+         old=c("x"),
+         new=c("Avg_Euc_Dist_Mi"))
+AvgEuc_byPuma$Avg_Euc_Dist_Mi <- round(AvgEuc_byPuma$Avg_Euc_Dist_Mi, digits = 1)
+puma.spdf.euc <- merge(puma.spdf, AvgEuc_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.euc$Avg_Euc_Dist_Mi[is.na(puma.spdf.euc$Avg_Euc_Dist_Mi)] <- 0
+puma.spdf <- puma.spdf.euc
+
+# Tweet time 
+AvgTtime_byPuma <- aggregate(OD.matrix[,"OD_TimeDif"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(AvgTtime_byPuma,
+         old=c("x"),
+         new=c("Avg_tweetTime"))
+AvgTtime_byPuma$Avg_tweetTime <- round(AvgTtime_byPuma$Avg_tweetTime, digits = 0)
+puma.spdf.tTime <- merge(puma.spdf, AvgTtime_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.tTime$Avg_tweetTime[is.na(puma.spdf.tTime$Avg_tweetTime)] <- 0
+puma.spdf <- puma.spdf.tTime
+
+# Route Dist
+Avg_RtDist_byPuma <- aggregate(OD.matrix[,"OD_RtDist_mi"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(Avg_RtDist_byPuma,
+         old=c("x"),
+         new=c("Avg_RtDist_Mi"))
+Avg_RtDist_byPuma$Avg_RtDist_Mi <- round(Avg_RtDist_byPuma$Avg_RtDist_Mi, digits = 1)
+puma.spdf.rtDist <- merge(puma.spdf, Avg_RtDist_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.rtDist$Avg_RtDist_Mi[is.na(puma.spdf.rtDist$Avg_RtDist_Mi)] <- 0
+puma.spdf <- puma.spdf.rtDist
+
+# Route Time
+Avg_RtTime_byPuma <- aggregate(OD.matrix[,"OD_RtTime_min"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(Avg_RtTime_byPuma,
+         old=c("x"),
+         new=c("Avg_RtTime_min"))
+Avg_RtTime_byPuma$Avg_RtTime_min <- round(Avg_RtTime_byPuma$Avg_RtTime_min, digits = 0)
+puma.spdf.rtTime <- merge(puma.spdf, Avg_RtTime_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.rtTime$Avg_RtTime_min[is.na(puma.spdf.rtTime$Avg_RtTime_min)] <- 0
+puma.spdf <- puma.spdf.rtTime
+
+
+
+
+### IMPORT & CLEAN POP DENSITY DATA ###
+
+# AFF POPULATION DATA
+# AFF.pop
+
+AFF.pop <- separate(data = AFF.pop,
+                    col = GEO.id, into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                   AFF.pop[,c(2,5)],
+                   by.x = "GEOID10",
+                   by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Total"),
+         new=c("Population_est"))
+
+# calculate pop density
+puma.spdf$area_sq_km <- puma.spdf$ALAND10 / 1000000
+puma.spdf$area_sq_mi <- puma.spdf$area_sq_km / 2.58999
+puma.spdf$pop_density_per_sq_mi <- puma.spdf$Population_est/puma.spdf$area_sq_mi
+puma.spdf$pop_density_per_sq_mi <- round(puma.spdf$pop_density_per_sq_mi, digits = 0)
+
+# Create for plot
+# Format number for population_den
+puma.spdf$pop_density_fmt <- prettyNum(puma.spdf$pop_density_per_sq_mi, big.mark=",")
+
+### plot population density ###
+# create colore palette
+breaks.pop <-classIntervals(puma.spdf$pop_density_per_sq_mi, n=7, style="jenks")
+breaks.pop <- breaks.pop$brks
+pal.pop <- colorBin("YlOrRd", domain = puma.spdf$pop_density_per_sq_mi, bins = breaks.pop)
+
+
+
+
+### IMPORT & CLEAN HOUSEHOLD INCOME DATA ###
+
+## AFF INCOME DATA
+# AFF.inc
+
+
+AFF.inc <- separate(data = AFF.inc,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.inc[,c(2,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("Number; Estimate; All households"),
+         new=c("Inc_per_household"))
+
+# Create for Plot
+# create $$ format for mean income number 
+puma.spdf$inc.fmt <- paste('$',formatC(puma.spdf$Inc_per_household, big.mark=',', format = 'f', drop0trailing = TRUE))
+
+# create colore palette
+breaks.inc <- classIntervals(puma.spdf$Inc_per_household, n=7, style="jenks")
+breaks.inc <- breaks.inc$brks
+pal.inc <- colorBin("YlOrRd", domain = puma.spdf$Inc_per_household, bins = breaks.inc)
+
+
+
+
+### IMPORT & CLEAN VEHICLE DATA ###
+
+## AFF VEHICLE DATA
+# AFF.veh
+
+
+AFF.veh <- separate(data = AFF.veh,
+                    col = GEO.id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.veh[,c(2,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("HD01_VD01"),
+         new=c("Vehicles_available"))
+
+# create vehicles available per person
+puma.spdf$Vehicles_available <- as.numeric(puma.spdf$Vehicles_available)
+puma.spdf$Veh_avail_per_person <- puma.spdf$Vehicles_available/puma.spdf$Population_est
+puma.spdf$Veh_avail_per_person_per_sqmi <- puma.spdf$Vehicles_available/puma.spdf$pop_density_per_sq_mi
+
+# Create for plot
+# Format numbers
+puma.spdf$Vehicles_available_PP_fmt <- prettyNum(puma.spdf$Veh_avail_per_person,big.mark=",")
+puma.spdf$Veh_avail_per_person <- as.numeric(puma.spdf$Veh_avail_per_person)
+
+# create colore palette
+breaks.veh <- classIntervals(puma.spdf$Veh_avail_per_person, n=7, style="jenks")
+breaks.veh <- breaks.veh$brks
+pal.veh <- colorBin("YlOrRd", domain = puma.spdf$Veh_avail_per_person, bins = breaks.veh)
+
+
+
+
+### IMPORT & CLEAN AGE & SEX DATA ###
+
+## AFF AGE & SEX DATA
+## AFF.age.sex
+AFF.age.sex <- separate(data = AFF.age.sex,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.age.sex[,c(2,9,13,65,77,89,101,113,125,137,149,161,173,185,197,209,221)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+# Create age groups
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(32:36)]))
+puma.spdf$age_20_44 <- puma.spdf.sum
+
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(37:41)]))
+puma.spdf$age_45_69 <- puma.spdf.sum
+
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(42:45)]))
+puma.spdf$age_70_plus <- puma.spdf.sum
+
+# Delete unused columns
+puma.spdf <- puma.spdf[,-c(32:45)]
+
+# Rename Male/Female
+setnames(as.data.frame(puma.spdf),
+         old=c("Male; Estimate; Total population"),
+         new=c("Male_pop"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Female; Estimate; Total population"),
+         new=c("Female_pop"))
+
+# Create male and female per sq.mile
+puma.spdf$Male_per_sq_mi <- puma.spdf$Male_pop/puma.spdf$area_sq_mi
+puma.spdf$Male_per_sq_mi <- round(puma.spdf$Male_per_sq_mi, digits = 0)
+
+puma.spdf$Female_per_sq_mi <- puma.spdf$Female_pop/puma.spdf$area_sq_mi
+puma.spdf$Female_per_sq_mi <- round(puma.spdf$Female_per_sq_mi, digits = 0)
+
+# Create age groups per sq.mile
+puma.spdf$age_20_44_per_sq_mi <- puma.spdf$age_20_44/puma.spdf$area_sq_mi
+puma.spdf$age_20_44_per_sq_mi <- round(puma.spdf$age_20_44_per_sq_mi, digits = 0)
+
+puma.spdf$age_45_69_per_sq_mi <- puma.spdf$age_45_69/puma.spdf$area_sq_mi
+puma.spdf$age_45_69_per_sq_mi <- round(puma.spdf$age_45_69_per_sq_mi, digits = 0)
+
+puma.spdf$age_70_plus_per_sq_mi <- puma.spdf$age_70_plus/puma.spdf$area_sq_mi
+puma.spdf$age_70_plus_per_sq_mi <- round(puma.spdf$age_70_plus_per_sq_mi, digits = 0)
+
+### CREATE FOR PLOT ###
+# Male
+# create $$ format for mean income number 
+puma.spdf$Male_per_sq_mi_fmt <- prettyNum(puma.spdf$Male_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.male <- classIntervals(puma.spdf$Male_per_sq_mi, n=7, style="jenks")
+breaks.male <- breaks.male$brks
+pal.male <- colorBin("YlOrRd", domain = puma.spdf$Male_per_sq_mi, bins = breaks.male)
+
+# Female
+# create $$ format for mean income number 
+puma.spdf$Female_per_sq_mi_fmt <- prettyNum(puma.spdf$Female_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.Female <- classIntervals(puma.spdf$Female_per_sq_mi, n=7, style="jenks")
+breaks.Female <- breaks.Female$brks
+pal.Female <- colorBin("YlOrRd", domain = puma.spdf$Female_per_sq_mi, bins = breaks.Female)
+
+# 20-44
+# create $$ format for mean income number 
+puma.spdf$age_20_44_per_sq_mi_fmt <- prettyNum(puma.spdf$age_20_44_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_20_44 <- classIntervals(puma.spdf$age_20_44_per_sq_mi, n=7, style="jenks")
+breaks.age_20_44 <- breaks.age_20_44$brks
+pal.age_20_44 <- colorBin("YlOrRd", domain = puma.spdf$age_20_44_per_sq_mi, bins = breaks.age_20_44)
+
+# 45-69
+# create $$ format for mean income number 
+puma.spdf$age_45_69_per_sq_mi_fmt <- prettyNum(puma.spdf$age_45_69_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_45_69 <- classIntervals(puma.spdf$age_45_69_per_sq_mi, n=7, style="jenks")
+breaks.age_45_69 <- breaks.age_45_69$brks
+pal.age_45_69 <- colorBin("YlOrRd", domain = puma.spdf$age_45_69_per_sq_mi, bins = breaks.age_45_69)
+
+
+# 70+
+# create $$ format for mean income number 
+puma.spdf$age_70_plus_per_sq_mi_fmt <- prettyNum(puma.spdf$age_70_plus_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_70_plus <- classIntervals(puma.spdf$age_70_plus_per_sq_mi, n=7, style="jenks")
+breaks.age_70_plus <- breaks.age_70_plus$brks
+pal.age_70_plus <- colorBin("YlOrRd", domain = puma.spdf$age_70_plus_per_sq_mi, bins = breaks.age_70_plus)
+
+
+
+
+### IMPORT & CLEAN EDUCATION DATA ###
+
+## AFF EDUCATION DATA
+## AFF.edu
+
+AFF.edu <- separate(data = AFF.edu,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.edu[,c(2,4,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+
+# remame columns
+setnames(as.data.frame(puma.spdf),
+         old=c("Total; Estimate; Population 25 years and over"),
+         new=c("Pop_25_older"))
+
+# Calculate percentage of people with Associates degree or above
+puma.spdf$Perc_25o_assc_above <- (puma.spdf$`25_AssociatedDeg_orHigher` / puma.spdf$Pop_25_older) * 100
+puma.spdf$Perc_25o_assc_above <- round(puma.spdf$Perc_25o_assc_above, digits = 2)
+
+# Create for plot
+# create % format for number 
+puma.spdf$Perc_25o_assc_above_fmt <- paste(puma.spdf$Perc_25o_assc_above, "%")
+
+# create colore palette
+breaks.edu <- classIntervals(puma.spdf$Perc_25o_assc_above, n=7, style="jenks")
+breaks.edu <- breaks.edu$brks
+pal.edu <- colorBin("YlOrRd", domain = puma.spdf$Perc_25o_assc_above, bins = breaks.edu)
+
+
+
+
+# IMPORT & CLEAN RACE DATA #
+
+
+## AFF RACE DATA
+## AFF.race
+
+AFF.race <- separate(data = AFF.race,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.race[,c(2,5,6,7,8,9)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+
+# remame columns
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Total:"),
+         new=c("Race_pop_est"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - White alone"),
+         new=c("Race_White"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - Black or African American alone"),
+         new=c("Race_Black"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - Asian alone"),
+         new=c("Race_Asian"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Hispanic or Latino:"),
+         new=c("Race_Hispanic"))
+
+# Calculate percentage of people with Associates degree or above
+puma.spdf$Perc_White <- (puma.spdf$Race_White / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_White <- round(puma.spdf$Perc_White, digits = 2)
+
+puma.spdf$Perc_Black <- (puma.spdf$Race_Black / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Black <- round(puma.spdf$Perc_Black, digits = 2)
+
+puma.spdf$Perc_Asian <- (puma.spdf$Race_Asian / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Asian <- round(puma.spdf$Perc_Asian, digits = 2)
+
+puma.spdf$Perc_Hispanic <- (puma.spdf$Race_Hispanic / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Hispanic <- round(puma.spdf$Perc_Hispanic, digits = 2)
+
+## CREATE FOR PLOT ###
+# White
+# create % format for number 
+puma.spdf$Perc_White_fmt <- paste(puma.spdf$Perc_White, "%")
+
+# create colore palette
+breaks.White <- classIntervals(puma.spdf$Perc_White, n=7, style="jenks")
+breaks.White <- breaks.White$brks
+pal.White <- colorBin("YlOrRd", domain = puma.spdf$Perc_White, bins = breaks.White)
+
+# Black
+# create % format for number 
+puma.spdf$Perc_Black_fmt <- paste(puma.spdf$Perc_Black, "%")
+
+# create colore palette
+breaks.Black <- classIntervals(puma.spdf$Perc_Black, n=7, style="jenks")
+breaks.Black <- breaks.Black$brks
+pal.Black <- colorBin("YlOrRd", domain = puma.spdf$Perc_Black, bins = breaks.Black)
+
+# Asian
+# create % format for number 
+puma.spdf$Perc_Asian_fmt <- paste(puma.spdf$Perc_Asian, "%")
+
+# create colore palette
+breaks.Asian <- classIntervals(puma.spdf$Perc_Asian, n=7, style="jenks")
+breaks.Asian <- breaks.Asian$brks
+pal.Asian <- colorBin("YlOrRd", domain = puma.spdf$Perc_Asian, bins = breaks.Asian)
+
+# Hispanic
+# create % format for number 
+puma.spdf$Perc_Hispanic_fmt <- paste(puma.spdf$Perc_Hispanic, "%")
+
+# create colore palette
+breaks.Hispanic <- classIntervals(puma.spdf$Perc_Hispanic, n=7, style="jenks")
+breaks.Hispanic <- breaks.Hispanic$brks
+pal.Hispanic <- colorBin("YlOrRd", domain = puma.spdf$Perc_Hispanic, bins = breaks.Hispanic)
+
+
+
+### REGRESSION ###
+# create reg specific files
+puma.spdf.reg <- puma.spdf
+
+# Export to shapefile to do REGRESSION in ArcGISPro
+write.csv(as.data.frame(puma.spdf.reg), file = "puma.reg3.csv")
+
+```
+
+
+# Model Demonstration Results
+
+This model was initially constructed using tweets gathered from users in Los Angeles, California. The origin locations were considered as any tweet posted within two miles of LAX airport. The destination locations were considered as any subsequent tweet posted within Los Angeles county. The Twitter data extraction script was run using Python and the output was exported as .csv to be imported into this model. Twitter data was extracted for just under four days between April 18 and April 22, and a total of 1,439 origin tweets were observed. After data extraction, cleaning and processing, 136 OD pairs were created. The OD pairs represent users who tweeted once within two miles of LAX and again anywhere within LA County.
+
+The results below show travel summary statistics based on the 136 OD pairs as well as a map of destination densities with Los Angeles. Additionally, the second map shows demographic characteristics by PUMA region for Los Angeles county. Given the short data extraction time period and subsequently low number of OD pairs observed, the initial dataset was not sufficient to run regression analysis. However, the model still includes the export features workflow to gather the information necessary to run regression. Moving forward, the Python script that was used to gather the initial demonstration data is currently running to obtain a larger dataset which can be used to create a more realistic model and gather greater insight using regression and other analytical methods. 
+
+## Summary Statistics
+
+This table shows travel summary statistics for the demonstration dataset. Google maps API was used to determine route distance and time. The pie chart shows OD pairs which were aggregated into 5 categories to show the distribution of destination distances.   
+
+```{r echo=FALSE}
+### SHOW SUMMARY STATISTICS ###
+
+## Create Summary Stats matrix ##
+Sum.Stats <- matrix( c(Avg.EucDist, Avg.tw.TimeDiff, Avg.RtDist, Avg.RtTime), nrow = 4, byrow=TRUE)
+rownames(Sum.Stats) <- c("Average Euclidean Distance (mi)", "Average time difference between tweets (min)", "Average Route Distance (mi)", "Average Route Time (min)")
+colnames(Sum.Stats) <- c("Value")
+
+## Show Table ##
+kable(Sum.Stats, format = "html", table.attr = "style = \"color: black;\"",
+     caption = "Travel Summary Statistics") %>%
+  kable_styling(bootstrap_options = c("striped",
+                                      "hover",
+                                      "condensed",
+                                      "responsive"))
+
+## Create Bar for destination trip distribution
+## look at these to creat df less_5mi, btw_5_10mi, btw_10_20mi, btw_20_30mi, grt_30mi
+df <- data.frame(
+  group = c("less than 5 miles", "5 to 10 miles", "10 to 20 miles", "20 to 30 miles", "greater than 30 miles"),
+  value = c(5.1, 34.6, 41.9, 8.1, 10.3)
+  )
+
+# Create a basic bar
+pie = ggplot(df, aes(x="", y=value, fill=group)) + geom_bar(stat="identity", width=1)
+ 
+# Convert to pie (polar coordinates) and add labels
+pie = pie + coord_polar("y", start=0) + geom_text(aes(label = paste0(value, "%")), position = position_stack(vjust = 0.6))
+ 
+# Add color scale (hex colors)
+pie = pie + scale_fill_manual(values=c("#55DDE0", "#33658A", "#2F4858", "#F6AE2D", "#F26419")) 
+ 
+# Remove labels and add title
+pie = pie + labs(x = NULL, y = NULL, fill = NULL, title = "Destination Distrance Distribution")
+ 
+# Tidy up the theme
+pie = pie + theme_classic() + theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+pie
+```
+
+## Visualize Destination Data and Travel Statistics
+
+The map below visualizes OD locations overlayed on a chloropleth of destination density per PUMA area, classified using the Jenks method. Hovering over the polygons shows the summary statistics unique to each area.
+
+```{r echo=FALSE}
+## Map with OD data and travel stats  ##
+
+labels.dest2 <- sprintf("<div style = 'overflow-wrap: anywhere;'><strong>%s <br/>%s Destinations</div><br/>%s Euclidean Miles from LAX on average<br/>%s minutes between OD tweets </div><br/>%s Miles from LAX on average</div><br/>%s minutes from LAX on average</div>",
+                  puma.spdf$NAMELSAD10,
+                  puma.spdf$Dest_pt_count,
+                  puma.spdf$Avg_Euc_Dist_Mi,
+                  puma.spdf$Avg_tweetTime,
+                  puma.spdf$Avg_RtDist_Mi,
+                  puma.spdf$Avg_RtTime_min) %>% lapply(htmltools::HTML)
+
+leaflet() %>% addTiles() %>% 
+  setView(lng=-118.243683, lat=34.1, zoom  = 9.35) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title = "Default View", 
+    onClick=JS("function(btn, map) { 
+       var groupLayer = map.layerManager.getLayerGroup('Destinations (red)'); map.fitBounds(groupLayer.getBounds());}")))  %>%
+  addProviderTiles(providers$CartoDB.Positron, 
+                   group = "Grey") %>%
+  addProviderTiles(providers$OpenStreetMap.BlackAndWhite, 
+                   group = "OSM")  %>%
+
+  # Add Polygons
+  # Destination data
+    addPolygons(data = puma.spdf,
+              group = "Destination Density",
+              fillColor = ~pal.dest(Dest_pt_count),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.dest2,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Dest_pt_count,
+            group = "Destination Density",
+            pal=pal.dest,
+            title="Destination Density (Dest per PUMA)", 
+            position = "bottomright") %>%
+
+   # Add Points
+  addCircleMarkers(data = D.spdf, 
+                   radius = 2,
+                   color = "red",
+                   group = "Destinations (red)",
+                   fillOpacity = 0.5) %>%
+  addCircleMarkers(data = O.spdf, 
+                   radius = 2,
+                   color = "green",
+                   group = "Origins (green)") %>%
+  
+  # Add Layer Controls
+  addLayersControl(
+    baseGroups = c("OSM (default)", "Grey"),
+    overlayGroups = c("Destinations (red)", "Origins (green)","Destination Density"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
+## Visualize Demographic Data
+
+The map below visualizes OD locations overlayed on a chloropleth of, initially, population density per PUMA area, also classified using the Jenks method. Hovering over the polygon area shows destination count, as well as the values of every other demographic characteristic included in this model. The layers tab in the top corner of the map includes options to visualize the chloropleth map as each demographic characteristic.
+
+```{r echo=FALSE}
+## AGGREGATE MAP WITH ALL LAYERS ##
+
+labels.all <- sprintf("<div style = 'overflow-wrap: anywhere;'> <strong>%s <br/>%g Destinations</div><br/>%s People per sq. mile<br/>%s Mean income per household</div><br/>%s Vehicles available per person</div><br/>%s Male per Sq.mi</div><br/>%s Female per Sq.mi</div><br/>%s Age 20-44 per Sq.mi</div><br/>%s Age 45-69 per Sq.mi</div><br/>%s Age 70+ per Sq.mi</div><br/>%s 25+ Associates degree or higher</div><br/>%s Percent White</div></div><br/>%s Percent Black</div><br/>%s Percent Asian</div><br/>%s Percent Hispanic</div>",
+                  puma.spdf$NAMELSAD10,
+                  puma.spdf$Dest_pt_count,
+                  puma.spdf$pop_density_fmt,
+                  puma.spdf$inc.fmt,
+                  puma.spdf$Vehicles_available_PP_fmt,
+                  puma.spdf$Male_per_sq_mi_fmt,
+                  puma.spdf$Female_per_sq_mi_fmt,
+                  puma.spdf$age_20_44_per_sq_mi_fmt,
+                  puma.spdf$age_45_69_per_sq_mi_fmt,
+                  puma.spdf$age_70_plus_per_sq_mi_fmt,
+                  puma.spdf$Perc_25o_assc_above_fmt,
+                  puma.spdf$Perc_White_fmt,
+                  puma.spdf$Perc_Black_fmt,
+                  puma.spdf$Perc_Asian_fmt,
+                  puma.spdf$Perc_Hispanic_fmt) %>% lapply(htmltools::HTML)
+
+leaflet() %>% addTiles() %>% 
+  setView(lng=-118.243683, lat=34.1, zoom  = 9.35) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title = "Default View", 
+    onClick=JS("function(btn, map) { 
+       var groupLayer = map.layerManager.getLayerGroup('Destinations (red)'); map.fitBounds(groupLayer.getBounds());}")))  %>%
+  addProviderTiles(providers$CartoDB.Positron, 
+                   group = "Grey") %>%
+  addProviderTiles(providers$OpenStreetMap.BlackAndWhite, 
+                   group = "OSM")  %>%
+
+  # Add Polygons
+  # Destination data
+    addPolygons(data = puma.spdf,
+              group = "Destination Density",
+              fillColor = ~pal.dest(Dest_pt_count),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.dest2,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Dest_pt_count,
+            group = "Destination Density",
+            pal=pal.dest,
+            title="Destination Density (Dest per PUMA)", 
+            position = "bottomright") %>%
+  
+  # Population Density
+    addPolygons(data = puma.spdf,
+              group = "Population Density",
+              fillColor = ~pal.pop(pop_density_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.1,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$pop_density_per_sq_mi,
+            group = "Population Density",
+            pal=pal.pop,
+            title="Population Density (ppl per sq.mile)",
+            position = "bottomright") %>%
+  
+  
+  # Mean Income
+    addPolygons(data = puma.spdf,
+              group = "Household Income",
+              fillColor = ~pal.inc(Inc_per_household),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Inc_per_household,
+            group = "Household Income",
+            pal=pal.inc,
+            title="Mean Household Income",
+            position = "bottomright") %>%
+  
+  # Vehicles
+    addPolygons(data = puma.spdf,
+              group = "Vehicles Available per person",
+              fillColor = ~pal.veh(Veh_avail_per_person),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Veh_avail_per_person,
+            group = "Vehicles Available per person",
+            pal=pal.veh,
+            title="Vehicles Available per person",
+            position = "bottomright") %>%
+  # Male
+    addPolygons(data = puma.spdf,
+              group = "Male per sq.mi",
+              fillColor = ~pal.male(Male_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Male_per_sq_mi,
+            group = "Male per sq.mi",
+            pal=pal.male,
+            title="Male per sq.mi",
+            position = "bottomright") %>%
+  
+  # Female 
+    addPolygons(data = puma.spdf,
+              group = "Females per sq.mi",
+              fillColor = ~pal.Female(Female_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Female_per_sq_mi,
+            group = "Females per sq.mi",
+            pal=pal.Female,
+            title="Female per sq.mi",
+            position = "bottomright") %>%
+  
+  # 20-44
+    addPolygons(data = puma.spdf,
+              group = "Number of people 20-44 per sq.mi",
+              fillColor = ~pal.age_20_44(age_20_44_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_20_44_per_sq_mi,
+            group = "Number of people 20-44 per sq.mi",
+            pal=pal.age_20_44,
+            title="Number of people 20-44 per sq.mi",
+            position = "bottomright") %>%
+  # 45-69
+    addPolygons(data = puma.spdf,
+              group = "Number of people 45-69 per sq.mi",
+              fillColor = ~pal.age_45_69(age_45_69_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_45_69_per_sq_mi,
+            group = "Number of people 45-69 per sq.mi",
+            pal=pal.age_45_69,
+            title="Number of people 45-69 per sq.mi",
+            position = "bottomright") %>%
+  # 70+ 
+  addPolygons(data = puma.spdf,
+              group = "Number of people 70 and older per sq.mi",
+              fillColor = ~pal.age_70_plus(age_70_plus_per_sq_mi),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_70_plus_per_sq_mi,
+            group = "Number of people 70 and older per sq.mi",
+            pal=pal.age_70_plus,
+            title="Number of people 70 and older per sq.mi",
+            position = "bottomright") %>%
+  # Education
+  addPolygons(data = puma.spdf,
+              group = "Education per sq.mi",
+              fillColor = ~pal.edu(Perc_25o_assc_above),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_25o_assc_above,
+            group = "Education per sq.mi",
+            pal=pal.edu,
+            title="edu per sq.mi",
+            position = "bottomright") %>%
+  # White
+  addPolygons(data = puma.spdf,
+              group = "Percent White",
+              fillColor = ~pal.White(Perc_White),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_White,
+            group = "Percent White",
+            pal=pal.White,
+            title=" Percent White",
+            position = "bottomright") %>%
+  # Black
+  addPolygons(data = puma.spdf,
+              group = "Percent Black",
+              fillColor = ~pal.Black(Perc_Black),
+              weight = 1,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+   addLegend(values=puma.spdf$Perc_25o_assc_above,
+            group = "Percent Black",
+            pal=pal.Black,
+            title=" Percent Black",
+            position = "bottomright") %>%
+  # Asian
+  addPolygons(data = puma.spdf,
+              group = "Percent Asian",
+              fillColor = ~pal.Asian(Perc_Asian),
+              weight = 1,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_Asian,
+            group = "Percent Asian",
+            pal=pal.Asian,
+            title=" Percent Asian",
+            position = "bottomright") %>%
+  # Hispanic
+  addPolygons(data = puma.spdf,
+              group = "Percent Hispanic",
+              fillColor = ~pal.Hispanic(Perc_Hispanic),
+              weight = 1,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal",
+                                                       padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_Hispanic,
+            group="Percent Hispanic",
+            pal=pal.Hispanic,
+            title=" Percent Hispanic",
+            position = "bottomright") %>%
+ 
+   # Add Points
+  addCircleMarkers(data = D.spdf, 
+                   radius = 1,
+                   color = "red",
+                   group = "Destinations (red)",
+                   fillOpacity = 0.5) %>%
+  addCircleMarkers(data = O.spdf, 
+                   radius = 2,
+                   color = "green",
+                   group = "Origins (green)") %>%
+  
+  # Add Layer Controls
+  addLayersControl(
+    baseGroups = c("OSM (default)", "Grey"),
+    overlayGroups = c("Destinations (red)", "Origins (green)","Destination Density","Population Density","Household Income","Vehicles Available per person","Male per sq.mi","Females per sq.mi","Number of people 20-44 per sq.mi","Number of people 45-69 per sq.mi","Number of people 70 and older per sq.mi","Education per sq.mi","Percent White","Percent Black","Percent Asian", "Percent Hispanic"),
+    options = layersControlOptions(collapsed = TRUE)
+  )%>%
+  
+  hideGroup(c("Destination Density","Household Income","Vehicles Available per person","Male per sq.mi","Females per sq.mi","Number of people 20-44 per sq.mi","Number of people 45-69 per sq.mi","Number of people 70 and older per sq.mi","Education per sq.mi","Percent White","Percent Black","Percent Asian","Percent Hispanic"))
+```
+
+# Workflow
+
+The following sections discuss the entire workflow used to complete this model to understand travel behaviors.
+
+## Import ALL Data
+
+Although there are elements of this model that are specific to the demonstration case study (data attributes and location information), the model was created to be able to run with different datasets. As was pointed out earlier, the Python script that extracts the Twitter data is currently running to acquire more Tweets. Once the script is finished, the new data can be easily replaced in the section below and the model can be run with minimal alterations. Additionally, different demographic data can be replaced as necessary, assuming the data attribute column names are consistent. 
+
+```{r warning=FALSE, message=FALSE, eval=FALSE}
+# ORIGIN DATA
+O.data <- read_csv("Data/O_Data3.csv")
+# 1,439 observations
+
+# DESTINATION DATA
+D.data <- read_csv("Data/D_Data3.csv")
+## 5,365 observations
+
+# PUMA SHAPEFILE
+puma.spdf <- shapefile("Data/PUMA84.2/LA_puma.shp")
+
+# AFF POPULATION DATA
+AFF.pop <- read_csv("Data/ACS_17_5YR_B01003/ACS_17_5YR_B01003_with_ann.csv")
+
+## AFF INCOME DATA
+AFF.inc <- read_csv("Data/Income per Household/ACS_17_5YR_S1902_with_ann.csv")
+
+## VEHICLE DATA
+AFF.veh <- read_csv("Data/Vehicles avail by tenure/ACS_17_5YR_B25046_with_ann.csv")
+
+## AGE AND SEX DATA
+AFF.age.sex <- read_csv("Data/Age and Sex/ACS_17_5YR_S0101_with_ann.csv")
+
+## AFF EDUCATION DATA
+AFF.edu <- read_csv("Data/Education/ACS_17_5YR_S1501_with_ann.csv")
+
+## AFF RACE DATA
+AFF.race <- read_csv("Data/Race/ACS_17_5YR_B03002_with_ann.csv")
+```
+
+
+## Import and Clean Origin-Destination Data
+
+The flowing code imports the origin and destination data, which was gathered from Twitter's API using a Python algorithm. Each tweet represents a row in the data frame and there are 10 attributes included for each tweet. The attributes for each Tweet include: ID (twitter handle), time the tweet was posted, exact (point) X and Y coordinates of the tweets location, generalized (box) X and Y coordinates of the tweets location, geographic type (point or box), general location (neighborhood) name, tweet text, and tweet URL. 
+
+### Origin Data
+
+There are 1,439 tweet observation recorded for the demonstration origin dataset, which are tweets gathered within a two mile radius of LAX airport during a four day period between April 18 and April 22, 2019. The origin data is filtered to include one tweet per user (removed 572 tweets), as well as tweets that have location attributes (removed 357). Out of the two filters, removing duplicate users had the largest impact removing 52% of the applicable data. The final origin dataset consists of 510 tweets. 
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### O DATA ###
+
+# O.data
+# 1,439 observations
+
+# replace box_XY with geo_XY if applicable
+O.data$O_box_X <- ifelse(is.na(O.data$O_geo_X), O.data$O_box_X, O.data$O_geo_X)
+O.data$O_box_Y <- ifelse(is.na(O.data$O_geo_Y), O.data$O_box_Y, O.data$O_geo_Y)
+
+# remove coordinates with NA values
+O.data <- O.data[!is.na(O.data$O_box_X),]
+# 1082 observations (357 removed)
+
+# Filter out duplicate twitter handles (getting first tweet that was posted)
+O.data <- O.data[order(O.data$ID, O.data$O_time), ]
+O.data <- O.data[!duplicated(O.data$ID), ]
+# 510 observations (572 removed)
+
+#  Reformat time columns
+O.time.GMT <- strptime(O.data$O_time, "%a %b %d %H:%M:%S %z %Y", tz = "GMT")
+
+O.dt.GMT <- as.POSIXct(O.time.GMT, tz = "GMT")
+
+O.data$O_time <- as.POSIXct(format(O.dt.GMT, tz = "America/Los_Angeles", usetz = TRUE))
+
+O.data$O_date <- format(as.POSIXct(strptime(O.data$O_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%Y-%m-%d")
+O.data$O_time2 <- format(as.POSIXct(strptime(O.data$O_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%H:%M:%S")
+
+O.data$O_date <- as.Date(O.data$O_date)
+```
+
+### Destination Data
+
+There are 5,365 tweet observations recorded for the demonstration destination dataset. The destination dataset consists of user tweet timelines (historical and current) which were extracted every hour after the original origin tweet was recorded in the Python script. The tweets within the destination dataset are filtered to include only tweets which have location attributes AND are located within LA county (removed 1,487). The only filter for the Destination dataset removed 27.7% of the tweets. The final destination dataset consists of 3,878 tweets. 
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### D DATA ###
+
+# D.data
+# 5,365 Observations
+
+# replace box_XY with geo_XY if applicable
+D.data$D_box_X <- ifelse(is.na(D.data$D_geo_X), D.data$D_box_X, D.data$D_geo_X)
+D.data$D_box_Y <- ifelse(is.na(D.data$D_geo_Y), D.data$D_box_Y, D.data$D_geo_Y)
+
+### Clip D points inside of PUMA Shapefile ###
+# create spdf from D.data & project
+D.spdf <- D.data
+coordinates(D.spdf) <- ~D_box_Y + D_box_X
+projection(D.spdf) <- CRS("+proj=longlat")
+
+# PUMA SHAPEFILE
+# puma.spdf
+
+# project PUMA
+projection(puma.spdf)=projection(D.spdf)
+
+# clip D points inside of PUMA
+D.spdf <- D.spdf[puma.spdf, ]
+# 3878 observations (removed 1487)
+
+# convert .spdf back to regular dataframe
+D.data <- as.data.frame(D.spdf)
+
+#  Reformat time columns
+D.time.GMT <- strptime(D.data$D_time, "%a %b %d %H:%M:%S %z %Y", tz = "GMT")
+
+D.dt.GMT <- as.POSIXct(D.time.GMT, tz = "GMT")
+
+D.data$D_time <- as.POSIXct(format(D.dt.GMT, tz = "America/Los_Angeles", usetz = TRUE))
+
+D.data$D_date <- format(as.POSIXct(strptime(D.data$D_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%Y-%m-%d")
+D.data$D_time2 <- format(as.POSIXct(strptime(D.data$D_time,"%Y-%m-%d %H:%M:%S",tz="")) ,format = "%H:%M:%S")
+
+D.data$D_date <- as.Date(D.data$D_date)
+
+O.data$O_date <- as.POSIXct(O.data$O_date)
+```
+
+### Origin and Destination Data - OD Matrix
+
+The origin and destination datasets are joined together by ID to make the OD matrix. The demonstration OD matrix consists of 3,878 observations which represent origin and destination pairs. During the joining process, origin tweets are duplicated for every matching destination tweet. The OD matrix is filtered to include OD pairs for which the destination tweet was made after the origin tweet (removed 2,529). The OD matrix is filtered to include OD pairs for which the destination tweet was made no longer than 24 hours after the origin tweet (removed 430). The OD matrix is filtered again to remove destination tweets which are located within 2 miles of LAX airport (removed 291). Finally, the OD matrix is ordered by ID and time difference between the O and D tweets and filtered to remove duplicate ID's, preserving the most recent tweet made after the origin tweet (removed 492). 
+
+The final demonstration result consists of 136 Origin-Destination pairs for users traveling from LAX to somewhere else in LA county. Out of the four filters for the OD matrix, removing duplicate users and removing tweets made before the origin were the most constraining, removing 78% and 65% of applicable tweets, respectively. The OD matrix shows that out of 510 potential origin tweets, there are 136 destination tweets which meet the filtering criteria laid out above.
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### OD DATA ###
+# Merge O and D datasets by Twitter ID(handle)
+OD.matrix <- merge(O.data, D.data, by= "ID")
+# 3878 observations
+
+# Determine if the D tweet was made after the O tweet and make field $OD_GreaterTime as TRUE or FALSE
+for (i in 1:nrow(OD.matrix)) {
+  t <- difftime(OD.matrix[i,"D_time"], OD.matrix[i,"O_time"], units="mins")
+  OD.matrix$OD_TimeDif[i] <- t
+}
+# remove tweets that were not made after O tweet 
+OD.matrix <- OD.matrix[!(OD.matrix$OD_TimeDif <= 0),]
+# 1349 observations (2529 removed)
+
+# remove tweets that were made over 24 hours (1,440 mins) after O tweet
+OD.matrix <- OD.matrix[!(OD.matrix$OD_TimeDif >= 1440),]
+# 919 observations (430 removed)
+
+# Remove Destination points that are within LAX
+OD.matrix <- OD.matrix[!(OD.matrix$D_box_X < 33.97355 & 
+                         OD.matrix$D_box_X > 33.90861 & 
+                         OD.matrix$D_box_Y < -118.34129 & 
+                         OD.matrix$D_box_Y > -118.45322), ]
+# 628 observation (291 removed)
+
+# order tweets by ID and time, so the next line selects the most recent tweet after origin was tweeted 
+OD.matrix <- OD.matrix[order(OD.matrix$ID, OD.matrix$OD_TimeDif), ]
+# remove duplicates which then leaves D tweets that were posted right after the O tweet
+OD.matrix <- OD.matrix[!duplicated(OD.matrix$ID), ]
+# 136 observations (492 removed)
+
+# put D data back in D.data (includes OD_TimeDif)
+cols <- c(1, 13:24)
+D.data <- OD.matrix[,cols]
+
+# out O data back in O.data
+O.data <- OD.matrix[,1:12]
+
+# Create new OD.matrix with new D.data
+OD.matrix <- merge(O.data, D.data, by= "ID")
+
+```
+
+### Projecting the data
+
+The following section projects origin, destination and polygon data into UTM zone 11 North. 
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+####### Project Data #######
+# Promote OD data to SpatialPointsDataFrame
+# Promot Origin and Destination data to spdf using XY coords
+O.spdf <- O.data 
+D.spdf <- D.data
+coordinates(O.spdf) <- ~O_box_Y + O_box_X
+coordinates(D.spdf) <- ~D_box_Y + D_box_X
+
+## identify CRS O D Data
+projection(O.spdf) <- CRS("+proj=longlat")
+projection(D.spdf) <- CRS("+proj=longlat")
+
+## Project O D Data
+D.spdf.utm <- spTransform(D.spdf, CRS("+proj=utm +north +zone=11 +ellps=WGS84")) 
+O.spdf.utm <- spTransform(O.spdf, CRS("+proj=utm +north +zone=11 +ellps=WGS84")) 
+
+## Project polygons to UTM11N
+projection(puma.spdf)=projection(D.spdf.utm)
+## Project O D Data to UTM11N
+projection(O.spdf)=projection(D.spdf.utm)
+projection(D.spdf)=projection(D.spdf.utm)
+```
+
+### Calculating OD pair Travel Statistics
+
+The following section calculates travel statistics for the OD pairs:
+
+1. Euclidean Distance
+2. Time different between tweets
+3. Route Distance
+4. Route Duration
+
+Route distance and duration were calculated using Googlemaps API to determine the fastest route traveled and estimated duration.
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+##### Calculate OD Stats #####
+### Euclidean Distance ###
+# Calculate new column for Euclidean Distance in the matrix 
+# Run loop to create Euclidean distance (meters) for each row in the matrix
+for (i in 1:nrow(OD.matrix)) {
+  n <- distm(OD.matrix[i,c("O_box_Y","O_box_X")], OD.matrix[i,c("D_box_Y","D_box_X")], fun = distHaversine)
+  OD.matrix$OD_EucDist_m[i] <- n
+}
+
+# convert EucDistM to Euc Dist in Miles (1,609.344 meters in 1 mile)
+OD.matrix$OD_EucDist_Mi <- (OD.matrix$OD_EucDist_m / 1609.344)
+
+### Route Distance & duration ###
+# Put lat long in one column
+OD.matrix$O_latlong <- do.call(paste0, OD.matrix[c("O_box_X", "O_box_Y")])
+OD.matrix$D_latlong <- do.call(paste0, OD.matrix[c("D_box_X", "D_box_Y")])
+
+OD.matrix$O_latlong <- paste(OD.matrix$O_box_X, '+', OD.matrix$O_box_Y, sep = '')
+OD.matrix$D_latlong <- paste(OD.matrix$D_box_X, '+', OD.matrix$D_box_Y, sep = '')
+
+# Calculate route distance and route time from google API
+set.api.key("AIzaSyDqvlZEhRNWN_ddVZ4wrJg7vUHFMvOz_ko")
+for (i in 1:nrow(OD.matrix)) {
+  d <- gmapsdistance(origin = OD.matrix[i,"O_latlong"], destination = OD.matrix[i,"D_latlong"], mode = "driving")
+  OD.matrix$OD_RtDist_mi[i] <- d$Distance
+  OD.matrix$OD_RtTime_min[i] <- d$Time
+}
+
+# Convert to miles and minutes as opposed to meters and seconds
+OD.matrix$OD_RtDist_mi <- OD.matrix$OD_RtDist / 1609.344
+OD.matrix$OD_RtTime_min <- OD.matrix$OD_RtTime / 60
+
+##### CALCULATE Statistics #####
+
+### Average Euclidean Distance (miles) ###
+Avg.EucDist <- round(mean(OD.matrix$OD_EucDist_Mi), digits=2)
+
+### Average time difference between tweets (minutes) ###
+Avg.tw.TimeDiff <- round(mean(OD.matrix$OD_TimeDif), digits=2)
+
+### Average route distance (miles) ### 
+Avg.RtDist <- round(mean(OD.matrix$OD_RtDist_mi), digits=2)
+
+### Average trip time by driving (minutes) ### 
+Avg.RtTime <- round(mean(OD.matrix$OD_RtTime_min), digits=2)
+
+## Percent of trips less than 2 mile Route Distance
+OD_count <- count(OD.matrix)
+
+less_5mi <- sum(OD.matrix$OD_RtDist_mi < 5)
+less_5mi <- (less_5mi / OD_count) * 100
+less_5mi <- round(less_5mi, digits = 1)
+less_5mi <- paste(less_5mi, "%")
+  
+btw_5_10mi <- sum(OD.matrix$OD_RtDist_mi >= 5 & OD.matrix$OD_RtDist_mi < 10)
+btw_5_10mi <- (btw_5_10mi / OD_count) * 100
+btw_5_10mi <- round(btw_5_10mi, digits = 1)
+btw_5_10mi <- paste(btw_5_10mi, "%")
+
+btw_10_20mi <- sum(OD.matrix$OD_RtDist_mi >= 10 & OD.matrix$OD_RtDist_mi < 20)
+btw_10_20mi <- (btw_10_20mi / OD_count) * 100
+btw_10_20mi <- round(btw_10_20mi, digits = 1)
+btw_10_20mi <- paste(btw_10_20mi, "%")
+
+btw_20_30mi <- sum(OD.matrix$OD_RtDist_mi >= 20 & OD.matrix$OD_RtDist_mi < 30)
+btw_20_30mi <- (btw_20_30mi / OD_count) * 100
+btw_20_30mi <- round(btw_20_30mi, digits = 1)
+btw_20_30mi <- paste(btw_20_30mi, "%")
+
+grt_30mi <- sum(OD.matrix$OD_RtDist_mi >= 30)
+grt_30mi <- (grt_30mi / OD_count) * 100
+grt_30mi <- round(grt_30mi, digits = 1)
+grt_30mi <- paste(grt_30mi, "%")
+  
+```
+
+### Spatial Point Aggregation
+
+The folowing code aggregates the destination points into Public Use Microdata Areas provided by the US Census Bureau.
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### FIND POINT DATA & CLEAN PUMA ATTRIBUTE DATA ###
+
+# Figure out how many DESTINATION points in each puma polygon 
+over.data <- over(D.spdf, puma.spdf[,"GEOID10"])
+D.data$D_GEOID <- over.data$GEOID10
+count.data <- D.data %>% group_by(D_GEOID) %>% count()
+puma.spdf2 <- merge(puma.spdf, count.data, by.x = "GEOID10", by.y = "D_GEOID")
+puma.spdf <- puma.spdf2
+puma.spdf$n[is.na(puma.spdf$n)] <- 0
+setnames(as.data.frame(puma.spdf), old=c("n"), new=c("Dest_pt_count"))
+
+# Figure out how many ORIGIN points in each puma polygon 
+over.data <- over(O.spdf, puma.spdf[,"GEOID10"])
+O.data$O_GEOID <- over.data$GEOID10
+count.data <- O.data %>% group_by(O_GEOID) %>% count()
+puma.spdf2 <- merge(puma.spdf, count.data, by.x = "GEOID10", by.y = "O_GEOID")
+puma.spdf <- puma.spdf2
+puma.spdf$n[is.na(puma.spdf$n)] <- 0
+setnames(as.data.frame(puma.spdf), old=c("n"), new=c("Origin_pt_count"))
+
+# Create for plot
+# Find JENKS classes - for this, the data is too small and wants two zeros but we can still view the classes
+#breaks.dest <-classIntervals(puma.spdf$Dest_pt_count, n=5, style="jenks")
+#breaks.dest <- breaks.dest$brks
+#View(breaks.dest$brks)
+breaks.dest <- c(0,1,3,11,53)
+pal.dest <- colorBin("YlOrRd", domain = puma.spdf$Dest_pt_count, bins = breaks.dest)
+labels.dest <- sprintf("<div style = 'overflow-wrap: anywhere;'> <strong>%s</strong><br/>%g destinations</div>",
+                  puma.spdf$NAME, 
+                  puma.spdf$Dest_pt_count) %>% lapply(htmltools::HTML)
+
+
+# Create stats per PUMA
+over.data <- over(D.spdf, puma.spdf[,"GEOID10"])
+OD.matrix$D_GEOID <- over.data$GEOID10
+# Euc Distance
+AvgEuc_byPuma <- aggregate(OD.matrix[,"OD_EucDist_Mi"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(AvgEuc_byPuma,
+         old=c("x"),
+         new=c("Avg_Euc_Dist_Mi"))
+AvgEuc_byPuma$Avg_Euc_Dist_Mi <- round(AvgEuc_byPuma$Avg_Euc_Dist_Mi, digits = 1)
+puma.spdf.euc <- merge(puma.spdf, AvgEuc_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.euc$Avg_Euc_Dist_Mi[is.na(puma.spdf.euc$Avg_Euc_Dist_Mi)] <- 0
+puma.spdf <- puma.spdf.euc
+
+# Tweet time 
+AvgTtime_byPuma <- aggregate(OD.matrix[,"OD_TimeDif"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(AvgTtime_byPuma,
+         old=c("x"),
+         new=c("Avg_tweetTime"))
+AvgTtime_byPuma$Avg_tweetTime <- round(AvgTtime_byPuma$Avg_tweetTime, digits = 0)
+puma.spdf.tTime <- merge(puma.spdf, AvgTtime_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.tTime$Avg_tweetTime[is.na(puma.spdf.tTime$Avg_tweetTime)] <- 0
+puma.spdf <- puma.spdf.tTime
+
+# Route Dist
+Avg_RtDist_byPuma <- aggregate(OD.matrix[,"OD_RtDist_mi"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(Avg_RtDist_byPuma,
+         old=c("x"),
+         new=c("Avg_RtDist_Mi"))
+Avg_RtDist_byPuma$Avg_RtDist_Mi <- round(Avg_RtDist_byPuma$Avg_RtDist_Mi, digits = 1)
+puma.spdf.rtDist <- merge(puma.spdf, Avg_RtDist_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.rtDist$Avg_RtDist_Mi[is.na(puma.spdf.rtDist$Avg_RtDist_Mi)] <- 0
+puma.spdf <- puma.spdf.rtDist
+
+# Route Time
+Avg_RtTime_byPuma <- aggregate(OD.matrix[,"OD_RtTime_min"],
+          list(OD.matrix$D_GEOID), mean)
+setnames(Avg_RtTime_byPuma,
+         old=c("x"),
+         new=c("Avg_RtTime_min"))
+Avg_RtTime_byPuma$Avg_RtTime_min <- round(Avg_RtTime_byPuma$Avg_RtTime_min, digits = 0)
+puma.spdf.rtTime <- merge(puma.spdf, Avg_RtTime_byPuma, by.x = "GEOID10", by.y = "Group.1")
+puma.spdf.rtTime$Avg_RtTime_min[is.na(puma.spdf.rtTime$Avg_RtTime_min)] <- 0
+puma.spdf <- puma.spdf.rtTime
+
+```
+
+## DEMOGRAPHIC DATA
+
+The next section imports 13 demographic characteristics by PUMA region. 
+
+1. Population Density
+2. Average Household Income
+3. Available Vehicles Per Person
+4. Male Residents Per Square Mile
+5. Female Residents Per Square Mile
+6. Ages 20-44 Per Square Mile
+7. Ages 45-69 Per Square Mile
+8. Ages 70+ Per Square Mile
+9. Percentage of People over 25 with an Associates Degree or greater
+10. Percentage of White Race
+11. Percentage of Black Race
+12. Percentage of Asian Race
+13. Percentage of Histpanic Race
+
+### Population Density 
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### IMPORT & CLEAN POP DENSITY DATA ###
+
+# AFF POPULATION DATA
+# AFF.pop
+
+AFF.pop <- separate(data = AFF.pop,
+                    col = GEO.id, into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                   AFF.pop[,c(2,5)],
+                   by.x = "GEOID10",
+                   by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Total"),
+         new=c("Population_est"))
+
+# calculate pop density
+puma.spdf$area_sq_km <- puma.spdf$ALAND10 / 1000000
+puma.spdf$area_sq_mi <- puma.spdf$area_sq_km / 2.58999
+puma.spdf$pop_density_per_sq_mi <- puma.spdf$Population_est/puma.spdf$area_sq_mi
+puma.spdf$pop_density_per_sq_mi <- round(puma.spdf$pop_density_per_sq_mi, digits = 0)
+
+# Create for plot
+# Format number for population_den
+puma.spdf$pop_density_fmt <- prettyNum(puma.spdf$pop_density_per_sq_mi, big.mark=",")
+
+### plot population density ###
+# create colore palette
+breaks.pop <-classIntervals(puma.spdf$pop_density_per_sq_mi, n=7, style="jenks")
+breaks.pop <- breaks.pop$brks
+pal.pop <- colorBin("YlOrRd", domain = puma.spdf$pop_density_per_sq_mi, bins = breaks.pop)
+
+```
+
+### Average Household Income
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### IMPORT & CLEAN HOUSEHOLD INCOME DATA ###
+
+## AFF INCOME DATA
+# AFF.inc
+
+
+AFF.inc <- separate(data = AFF.inc,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.inc[,c(2,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("Number; Estimate; All households"),
+         new=c("Inc_per_household"))
+
+# Create for Plot
+# create $$ format for mean income number 
+puma.spdf$inc.fmt <- paste('$',formatC(puma.spdf$Inc_per_household, big.mark=',', format = 'f', drop0trailing = TRUE))
+
+# create colore palette
+breaks.inc <- classIntervals(puma.spdf$Inc_per_household, n=7, style="jenks")
+breaks.inc <- breaks.inc$brks
+pal.inc <- colorBin("YlOrRd", domain = puma.spdf$Inc_per_household, bins = breaks.inc)
+
+```
+
+### Available Vehicles Per Person
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### IMPORT & CLEAN VEHICLE DATA ###
+
+## AFF VEHICLE DATA
+# AFF.veh
+
+
+AFF.veh <- separate(data = AFF.veh,
+                    col = GEO.id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.veh[,c(2,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+setnames(as.data.frame(puma.spdf),
+         old=c("HD01_VD01"),
+         new=c("Vehicles_available"))
+
+# create vehicles available per person
+puma.spdf$Vehicles_available <- as.numeric(puma.spdf$Vehicles_available)
+puma.spdf$Veh_avail_per_person <- puma.spdf$Vehicles_available/puma.spdf$Population_est
+puma.spdf$Veh_avail_per_person_per_sqmi <- puma.spdf$Vehicles_available/puma.spdf$pop_density_per_sq_mi
+
+# Create for plot
+# Format numbers
+puma.spdf$Vehicles_available_PP_fmt <- prettyNum(puma.spdf$Veh_avail_per_person,big.mark=",")
+puma.spdf$Veh_avail_per_person <- as.numeric(puma.spdf$Veh_avail_per_person)
+
+# create colore palette
+breaks.veh <- classIntervals(puma.spdf$Veh_avail_per_person, n=7, style="jenks")
+breaks.veh <- breaks.veh$brks
+pal.veh <- colorBin("YlOrRd", domain = puma.spdf$Veh_avail_per_person, bins = breaks.veh)
+
+```
+
+### Sex and Age Data
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### IMPORT & CLEAN AGE & SEX DATA ###
+
+## AFF AGE & SEX DATA
+## AFF.age.sex
+AFF.age.sex <- separate(data = AFF.age.sex,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.age.sex[,c(2,9,13,65,77,89,101,113,125,137,149,161,173,185,197,209,221)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+# Create age groups
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(32:36)]))
+puma.spdf$age_20_44 <- puma.spdf.sum
+
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(37:41)]))
+puma.spdf$age_45_69 <- puma.spdf.sum
+
+puma.spdf.sum <- rowSums(as.data.frame(puma.spdf[,c(42:45)]))
+puma.spdf$age_70_plus <- puma.spdf.sum
+
+# Delete unused columns
+puma.spdf <- puma.spdf[,-c(32:45)]
+
+# Rename Male/Female
+setnames(as.data.frame(puma.spdf),
+         old=c("Male; Estimate; Total population"),
+         new=c("Male_pop"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Female; Estimate; Total population"),
+         new=c("Female_pop"))
+
+# Create male and female per sq.mile
+puma.spdf$Male_per_sq_mi <- puma.spdf$Male_pop/puma.spdf$area_sq_mi
+puma.spdf$Male_per_sq_mi <- round(puma.spdf$Male_per_sq_mi, digits = 0)
+
+puma.spdf$Female_per_sq_mi <- puma.spdf$Female_pop/puma.spdf$area_sq_mi
+puma.spdf$Female_per_sq_mi <- round(puma.spdf$Female_per_sq_mi, digits = 0)
+
+# Create age groups per sq.mile
+puma.spdf$age_20_44_per_sq_mi <- puma.spdf$age_20_44/puma.spdf$area_sq_mi
+puma.spdf$age_20_44_per_sq_mi <- round(puma.spdf$age_20_44_per_sq_mi, digits = 0)
+
+puma.spdf$age_45_69_per_sq_mi <- puma.spdf$age_45_69/puma.spdf$area_sq_mi
+puma.spdf$age_45_69_per_sq_mi <- round(puma.spdf$age_45_69_per_sq_mi, digits = 0)
+
+puma.spdf$age_70_plus_per_sq_mi <- puma.spdf$age_70_plus/puma.spdf$area_sq_mi
+puma.spdf$age_70_plus_per_sq_mi <- round(puma.spdf$age_70_plus_per_sq_mi, digits = 0)
+
+### CREATE FOR PLOT ###
+# Male
+# create $$ format for mean income number 
+puma.spdf$Male_per_sq_mi_fmt <- prettyNum(puma.spdf$Male_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.male <- classIntervals(puma.spdf$Male_per_sq_mi, n=7, style="jenks")
+breaks.male <- breaks.male$brks
+pal.male <- colorBin("YlOrRd", domain = puma.spdf$Male_per_sq_mi, bins = breaks.male)
+
+# Female
+# create $$ format for mean income number 
+puma.spdf$Female_per_sq_mi_fmt <- prettyNum(puma.spdf$Female_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.Female <- classIntervals(puma.spdf$Female_per_sq_mi, n=7, style="jenks")
+breaks.Female <- breaks.Female$brks
+pal.Female <- colorBin("YlOrRd", domain = puma.spdf$Female_per_sq_mi, bins = breaks.Female)
+
+# 20-44
+# create $$ format for mean income number 
+puma.spdf$age_20_44_per_sq_mi_fmt <- prettyNum(puma.spdf$age_20_44_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_20_44 <- classIntervals(puma.spdf$age_20_44_per_sq_mi, n=7, style="jenks")
+breaks.age_20_44 <- breaks.age_20_44$brks
+pal.age_20_44 <- colorBin("YlOrRd", domain = puma.spdf$age_20_44_per_sq_mi, bins = breaks.age_20_44)
+
+# 45-69
+# create $$ format for mean income number 
+puma.spdf$age_45_69_per_sq_mi_fmt <- prettyNum(puma.spdf$age_45_69_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_45_69 <- classIntervals(puma.spdf$age_45_69_per_sq_mi, n=7, style="jenks")
+breaks.age_45_69 <- breaks.age_45_69$brks
+pal.age_45_69 <- colorBin("YlOrRd", domain = puma.spdf$age_45_69_per_sq_mi, bins = breaks.age_45_69)
+
+
+# 70+
+# create $$ format for mean income number 
+puma.spdf$age_70_plus_per_sq_mi_fmt <- prettyNum(puma.spdf$age_70_plus_per_sq_mi, big.mark=",")
+
+# create colore palette
+breaks.age_70_plus <- classIntervals(puma.spdf$age_70_plus_per_sq_mi, n=7, style="jenks")
+breaks.age_70_plus <- breaks.age_70_plus$brks
+pal.age_70_plus <- colorBin("YlOrRd", domain = puma.spdf$age_70_plus_per_sq_mi, bins = breaks.age_70_plus)
+
+
+```
+
+### Education Data
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### IMPORT & CLEAN EDUCATION DATA ###
+
+## AFF EDUCATION DATA
+## AFF.edu
+
+AFF.edu <- separate(data = AFF.edu,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.edu[,c(2,4,5)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+
+# remame columns
+setnames(as.data.frame(puma.spdf),
+         old=c("Total; Estimate; Population 25 years and over"),
+         new=c("Pop_25_older"))
+
+# Calculate percentage of people with Associates degree or above
+puma.spdf$Perc_25o_assc_above <- (puma.spdf$`25_AssociatedDeg_orHigher` / puma.spdf$Pop_25_older) * 100
+puma.spdf$Perc_25o_assc_above <- round(puma.spdf$Perc_25o_assc_above, digits = 2)
+
+# Create for plot
+# create % format for number 
+puma.spdf$Perc_25o_assc_above_fmt <- paste(puma.spdf$Perc_25o_assc_above, "%")
+
+# create colore palette
+breaks.edu <- classIntervals(puma.spdf$Perc_25o_assc_above, n=7, style="jenks")
+breaks.edu <- breaks.edu$brks
+pal.edu <- colorBin("YlOrRd", domain = puma.spdf$Perc_25o_assc_above, bins = breaks.edu)
+
+```
+
+### Race Data
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+# IMPORT & CLEAN RACE DATA #
+
+
+## AFF RACE DATA
+## AFF.race
+
+AFF.race <- separate(data = AFF.race,
+                    col = Id,
+                    into = c("NAME", "GEOID"),
+                    sep = "US")
+puma.spdf <- merge(puma.spdf,
+                    AFF.race[,c(2,5,6,7,8,9)],
+                    by.x = "GEOID10",
+                    by.y = "GEOID")
+
+# remame columns
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Total:"),
+         new=c("Race_pop_est"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - White alone"),
+         new=c("Race_White"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - Black or African American alone"),
+         new=c("Race_Black"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Not Hispanic or Latino: - Asian alone"),
+         new=c("Race_Asian"))
+setnames(as.data.frame(puma.spdf),
+         old=c("Estimate; Hispanic or Latino:"),
+         new=c("Race_Hispanic"))
+
+# Calculate percentage of people with Associates degree or above
+puma.spdf$Perc_White <- (puma.spdf$Race_White / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_White <- round(puma.spdf$Perc_White, digits = 2)
+
+puma.spdf$Perc_Black <- (puma.spdf$Race_Black / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Black <- round(puma.spdf$Perc_Black, digits = 2)
+
+puma.spdf$Perc_Asian <- (puma.spdf$Race_Asian / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Asian <- round(puma.spdf$Perc_Asian, digits = 2)
+
+puma.spdf$Perc_Hispanic <- (puma.spdf$Race_Hispanic / puma.spdf$Race_pop_est) * 100
+puma.spdf$Perc_Hispanic <- round(puma.spdf$Perc_Hispanic, digits = 2)
+
+## CREATE FOR PLOT ###
+# White
+# create % format for number 
+puma.spdf$Perc_White_fmt <- paste(puma.spdf$Perc_White, "%")
+
+# create colore palette
+breaks.White <- classIntervals(puma.spdf$Perc_White, n=7, style="jenks")
+breaks.White <- breaks.White$brks
+pal.White <- colorBin("YlOrRd", domain = puma.spdf$Perc_White, bins = breaks.White)
+
+# Black
+# create % format for number 
+puma.spdf$Perc_Black_fmt <- paste(puma.spdf$Perc_Black, "%")
+
+# create colore palette
+breaks.Black <- classIntervals(puma.spdf$Perc_Black, n=7, style="jenks")
+breaks.Black <- breaks.Black$brks
+pal.Black <- colorBin("YlOrRd", domain = puma.spdf$Perc_Black, bins = breaks.Black)
+
+# Asian
+# create % format for number 
+puma.spdf$Perc_Asian_fmt <- paste(puma.spdf$Perc_Asian, "%")
+
+# create colore palette
+breaks.Asian <- classIntervals(puma.spdf$Perc_Asian, n=7, style="jenks")
+breaks.Asian <- breaks.Asian$brks
+pal.Asian <- colorBin("YlOrRd", domain = puma.spdf$Perc_Asian, bins = breaks.Asian)
+
+# Hispanic
+# create % format for number 
+puma.spdf$Perc_Hispanic_fmt <- paste(puma.spdf$Perc_Hispanic, "%")
+
+# create colore palette
+breaks.Hispanic <- classIntervals(puma.spdf$Perc_Hispanic, n=7, style="jenks")
+breaks.Hispanic <- breaks.Hispanic$brks
+pal.Hispanic <- colorBin("YlOrRd", domain = puma.spdf$Perc_Hispanic, bins = breaks.Hispanic)
+```
+
+## Regression
+
+The following section exports the PUMA shapefile into .csv, so it can be used to run regression analysis in ArcGIS PRO. Regression can also be conducted in R, however, there are unique tools in ArcGIS which make it a more favorable environment for running regression on spatial objects. 
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### REGRESSION ###
+# create reg specific files
+puma.spdf.reg <- puma.spdf
+
+# Export to shapefile to do REGRESSION in ArcGISPro
+write.csv(as.data.frame(puma.spdf.reg), file = "puma.reg3.csv")
+
+```
+
+## Visualizing the results (as shown in first section)
+
+The following sections show how to visualize the results that were presented in the first section. The maps were visualized using the leaflet package.  
+
+### Summary Statistics
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+### SHOW SUMMARY STATISTICS ###
+
+## Create Summary Stats matrix ##
+Sum.Stats <- matrix( c(Avg.EucDist, Avg.tw.TimeDiff, Avg.RtDist, Avg.RtTime), nrow = 4, byrow=TRUE)
+rownames(Sum.Stats) <- c("Average Euclidean Distance (mi)", "Average time difference between tweets (min)", "Average Route Distance (mi)", "Average Route Time (min)")
+colnames(Sum.Stats) <- c("Value")
+
+## Show Table ##
+kable(Sum.Stats, format = "html", table.attr = "style = \"color: black;\"",
+     caption = "Travel Summary Statistics") %>%
+  kable_styling(bootstrap_options = c("striped",
+                                      "hover",
+                                      "condensed",
+                                      "responsive"))
+
+## Create Bar for destination trip distribution
+## look at these to creat df less_5mi, btw_5_10mi, btw_10_20mi, btw_20_30mi, grt_30mi
+df <- data.frame(
+  group = c("less than 5 miles", "5 to 10 miles", "10 to 20 miles", "20 to 30 miles", "greater than 30 miles"),
+  value = c(5.1, 34.6, 41.9, 8.1, 10.3)
+  )
+
+# Create a basic bar
+pie = ggplot(df, aes(x="", y=value, fill=group)) + geom_bar(stat="identity", width=1)
+ 
+# Convert to pie (polar coordinates) and add labels
+pie = pie + coord_polar("y", start=0) + geom_text(aes(label = paste0(value, "%")), position = position_stack(vjust = 0.6))
+ 
+# Add color scale (hex colors)
+pie = pie + scale_fill_manual(values=c("#55DDE0", "#33658A", "#2F4858", "#F6AE2D", "#F26419")) 
+ 
+# Remove labels and add title
+pie = pie + labs(x = NULL, y = NULL, fill = NULL, title = "Destination Distrance Distribution")
+ 
+# Tidy up the theme
+pie = pie + theme_classic() + theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+pie
+```
+
+### Visualize Destination Data and Travel Statistics
+
+```{r message=FALSE, warning=FALSE, eval=FALSE}
+## Map with OD data and travel stats  ##
+
+labels.dest2 <- sprintf("<div style = 'overflow-wrap: anywhere;'> <strong>%s <br/>%g Destinations</div><br/>%s Euclidean Miles from LAX on average<br/>%s minutes between OD tweets </div><br/>%s Miles from LAX on average</div><br/>%s minutes from LAX on average</div>",
+                  puma.spdf$NAMELSAD10,
+                  puma.spdf$Dest_pt_count,
+                  puma.spdf$Avg_Euc_Dist_Mi,
+                  puma.spdf$Avg_tweetTime,
+                  puma.spdf$Avg_RtDist_Mi,
+                  puma.spdf$Avg_RtTime_min) %>% lapply(htmltools::HTML)
+
+leaflet() %>% addTiles() %>% 
+  setView(lng=-118.243683, lat=34.1, zoom  = 9.35) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title = "Default View", 
+    onClick=JS("function(btn, map) {var groupLayer = map.layerManager.getLayerGroup('Destinations (red)'); map.fitBounds(groupLayer.getBounds());}")))  %>%
+  addProviderTiles(providers$CartoDB.Positron, 
+                   group = "Grey") %>%
+  addProviderTiles(providers$OpenStreetMap.BlackAndWhite, 
+                   group = "OSM")  %>%
+
+  # Add Polygons
+  # Destination data
+    addPolygons(data = puma.spdf,
+              group = "Destination Density",
+              fillColor = ~pal.dest(Dest_pt_count),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.dest2,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Dest_pt_count,
+            group = "Destination Density",
+            pal=pal.dest,
+            title="Destination Density (Dest per PUMA)", 
+            position = "bottomright") %>%
+
+   # Add Points
+  addCircleMarkers(data = D.spdf, 
+                   radius = 2,
+                   color = "red",
+                   group = "Destinations (red)",
+                   fillOpacity = 0.5) %>%
+  addCircleMarkers(data = O.spdf, 
+                   radius = 2,
+                   color = "green",
+                   group = "Origins (green)") %>%
+  
+  # Add Layer Controls
+  addLayersControl(
+    baseGroups = c("OSM (default)", "Grey"),
+    overlayGroups = c("Destinations (red)", "Origins (green)","Destination Density"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+### Visualize Demographic Data
+
+The script below is a long one, however, it visualizes all of the demographic data (which is a lot). The script below is essentially the same as the one above, with the repetition involved for visualizing each demographic layer. 
+
+```{r message==FALSE, warning=FALSE, eval=FALSE}
+## AGGREGATE MAP WITH ALL LAYERS ##
+
+labels.all <- sprintf("<div style = 'overflow-wrap: anywhere;'> <strong>%s <br/>%g Destinations</div><br/>%s People per sq. mile<br/>%s Mean income per household</div><br/>%s Vehicles available per person</div><br/>%s Male per Sq.mi</div><br/>%s Female per Sq.mi</div><br/>%s Age 20-44 per Sq.mi</div><br/>%s Age 45-69 per Sq.mi</div><br/>%s Age 70+ per Sq.mi</div><br/>%s 25+ Associates degree or higher</div><br/>%s Percent White</div></div><br/>%s Percent Black</div><br/>%s Percent Asian</div><br/>%s Percent Hispanic</div>",
+                  puma.spdf$NAMELSAD10,
+                  puma.spdf$Dest_pt_count,
+                  puma.spdf$pop_density_fmt,
+                  puma.spdf$inc.fmt,
+                  puma.spdf$Vehicles_available_PP_fmt,
+                  puma.spdf$Male_per_sq_mi_fmt,
+                  puma.spdf$Female_per_sq_mi_fmt,
+                  puma.spdf$age_20_44_per_sq_mi_fmt,
+                  puma.spdf$age_45_69_per_sq_mi_fmt,
+                  puma.spdf$age_70_plus_per_sq_mi_fmt,
+                  puma.spdf$Perc_25o_assc_above_fmt,
+                  puma.spdf$Perc_White_fmt,
+                  puma.spdf$Perc_Black_fmt,
+                  puma.spdf$Perc_Asian_fmt,
+                  puma.spdf$Perc_Hispanic_fmt) %>% lapply(htmltools::HTML)
+
+leaflet() %>% addTiles() %>% 
+  setView(lng=-118.243683, lat=34.1, zoom  = 9.35) %>%
+  addEasyButton(easyButton(
+    icon="fa-crosshairs", title = "Default View", 
+    onClick=JS("function(btn, map) { 
+       var groupLayer = map.layerManager.getLayerGroup('Destinations (red)'); map.fitBounds(groupLayer.getBounds());}")))  %>%
+  addProviderTiles(providers$CartoDB.Positron, 
+                   group = "Grey") %>%
+  addProviderTiles(providers$OpenStreetMap.BlackAndWhite, 
+                   group = "OSM")  %>%
+
+  # Add Polygons
+  # Destination data
+    addPolygons(data = puma.spdf,
+              group = "Destination Density",
+              fillColor = ~pal.dest(Dest_pt_count),
+              weight = 1,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.dest2,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Dest_pt_count,
+            group = "Destination Density",
+            pal=pal.dest,
+            title="Destination Density (Dest per PUMA)", 
+            position = "bottomright") %>%
+  
+  # Population Density
+    addPolygons(data = puma.spdf,
+              group = "Population Density",
+              fillColor = ~pal.pop(pop_density_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.1,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$pop_density_per_sq_mi,
+            group = "Population Density",
+            pal=pal.pop,
+            title="Population Density (ppl per sq.mile)",
+            position = "bottomright") %>%
+  
+  
+  # Mean Income
+    addPolygons(data = puma.spdf,
+              group = "Household Income",
+              fillColor = ~pal.inc(Inc_per_household),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Inc_per_household,
+            group = "Household Income",
+            pal=pal.inc,
+            title="Mean Household Income",
+            position = "bottomright") %>%
+  
+  # Vehicles
+    addPolygons(data = puma.spdf,
+              group = "Vehicles Available per person",
+              fillColor = ~pal.veh(Veh_avail_per_person),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Veh_avail_per_person,
+            group = "Vehicles Available per person",
+            pal=pal.veh,
+            title="Vehicles Available per person",
+            position = "bottomright") %>%
+  # Male
+    addPolygons(data = puma.spdf,
+              group = "Male per sq.mi",
+              fillColor = ~pal.male(Male_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Male_per_sq_mi,
+            group = "Male per sq.mi",
+            pal=pal.male,
+            title="Male per sq.mi",
+            position = "bottomright") %>%
+  
+  # Female 
+    addPolygons(data = puma.spdf,
+              group = "Females per sq.mi",
+              fillColor = ~pal.Female(Female_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Female_per_sq_mi,
+            group = "Females per sq.mi",
+            pal=pal.Female,
+            title="Female per sq.mi",
+            position = "bottomright") %>%
+  
+  # 20-44
+    addPolygons(data = puma.spdf,
+              group = "Number of people 20-44 per sq.mi",
+              fillColor = ~pal.age_20_44(age_20_44_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_20_44_per_sq_mi,
+            group = "Number of people 20-44 per sq.mi",
+            pal=pal.age_20_44,
+            title="Number of people 20-44 per sq.mi",
+            position = "bottomright") %>%
+  # 45-69
+    addPolygons(data = puma.spdf,
+              group = "Number of people 45-69 per sq.mi",
+              fillColor = ~pal.age_45_69(age_45_69_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_45_69_per_sq_mi,
+            group = "Number of people 45-69 per sq.mi",
+            pal=pal.age_45_69,
+            title="Number of people 45-69 per sq.mi",
+            position = "bottomright") %>%
+  # 70+ 
+  addPolygons(data = puma.spdf,
+              group = "Number of people 70 and older per sq.mi",
+              fillColor = ~pal.age_70_plus(age_70_plus_per_sq_mi),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$age_70_plus_per_sq_mi,
+            group = "Number of people 70 and older per sq.mi",
+            pal=pal.age_70_plus,
+            title="Number of people 70 and older per sq.mi",
+            position = "bottomright") %>%
+  # Education
+  addPolygons(data = puma.spdf,
+              group = "Education per sq.mi",
+              fillColor = ~pal.edu(Perc_25o_assc_above),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_25o_assc_above,
+            group = "Education per sq.mi",
+            pal=pal.edu,
+            title="edu per sq.mi",
+            position = "bottomright") %>%
+  # White
+  addPolygons(data = puma.spdf,
+              group = "Percent White",
+              fillColor = ~pal.White(Perc_White),
+              weight = 2,
+              opacity = 90,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_White,
+            group = "Percent White",
+            pal=pal.White,
+            title=" Percent White",
+            position = "bottomright") %>%
+  # Black
+  addPolygons(data = puma.spdf,
+              group = "Percent Black",
+              fillColor = ~pal.Black(Perc_Black),
+              weight = 2,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+   addLegend(values=puma.spdf$Perc_25o_assc_above,
+            group = "Percent Black",
+            pal=pal.Black,
+            title=" Percent Black",
+            position = "bottomright") %>%
+  # Asian
+  addPolygons(data = puma.spdf,
+              group = "Percent Asian",
+              fillColor = ~pal.Asian(Perc_Asian),
+              weight = 2,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_Asian,
+            group = "Percent Asian",
+            pal=pal.Asian,
+            title=" Percent Asian",
+            position = "bottomright") %>%
+  # Hispanic
+  addPolygons(data = puma.spdf,
+              group = "Percent Hispanic",
+              fillColor = ~pal.Hispanic(Perc_Hispanic),
+              weight = 2,
+              opacity = 90,
+              color = "White",
+              dashArray = "3",
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 5,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE,
+                                           sendToBack = TRUE),
+              label = labels.all,
+              labelOptions = labelOptions(style = list("font-weight" = "normal",
+                                                       padding = "3px 8px"),
+                                          textsize = "15px",
+                                          direction = "auto")) %>%
+  addLegend(values=puma.spdf$Perc_Hispanic,
+            group="Percent Hispanic",
+            pal=pal.Hispanic,
+            title=" Percent Hispanic",
+            position = "bottomright") %>%
+ 
+   # Add Points
+  addCircleMarkers(data = D.spdf, 
+                   radius = 2,
+                   color = "red",
+                   group = "Destinations (red)",
+                   fillOpacity = 0.5) %>%
+  addCircleMarkers(data = O.spdf, 
+                   radius = 2,
+                   color = "green",
+                   group = "Origins (green)") %>%
+  
+  # Add Layer Controls
+  addLayersControl(
+    baseGroups = c("OSM (default)", "Grey"),
+    overlayGroups = c("Destinations (red)", "Origins (green)","Destination Density","Population Density","Household Income","Vehicles Available per person","Male per sq.mi","Females per sq.mi","Number of people 20-44 per sq.mi","Number of people 45-69 per sq.mi","Number of people 70 and older per sq.mi","Education per sq.mi","Percent White","Percent Black","Percent Asian", "Percent Hispanic"),
+    options = layersControlOptions(collapsed = TRUE)
+  )%>%
+  
+  hideGroup(c("Destination Density","Household Income","Vehicles Available per person","Male per sq.mi","Females per sq.mi","Number of people 20-44 per sq.mi","Number of people 45-69 per sq.mi","Number of people 70 and older per sq.mi","Education per sq.mi","Percent White","Percent Black","Percent Asian","Percent Hispanic"))
+```
+
+# Conclusion and Next Steps 
+
+The steps outlined above use Origin-Destination data gathered from twitter, PUMA areas gathered from the US Census and demographic data gathered from American Community Survey to create a travel behavior model which visualizes origin destination pairs along with demographic data to better understand the travel environment for a certain region. The model calculates travel summary statistics for the OD pairs, aggregates the destination densities into PUMA regions, visualizes the OD pairs and visualizes 13 demographic characteristics. Not to mention all of the data cleaning, processing and creation along the way. 
+
+## Twitter API filter
+There are a few concerns which need to be addressed moving forward. First, the Twitter API is selective in how it releases its tweets meaning that it doesn't allow streaming and extraction of 100% of all the tweets being posted in real time. Due to this constraint, the tweets gathered through the API are not completely realistic and therefore may not be an accurate picture of user travel. The Twitter API documentation does not specify how it releases its tweets, but more research is needed to determine how the tweets are released and if there is a possibility to apply for promoted API access to a better streaming filter. 
+
+## Model Validation and Data Constraints 
+The model was created with a OD dataset which, unfortunately after filtering, only had 136 OD pairs. Because of this the results are not normally distributed and it is not possible to run a regression analysis on the data. Regression can be used to not only explore how the destination data is correlated with other characteristics, but it can also be used to validate the model. Metropolitan Planning Organizations like the Southern California Association of Governments (SCAG) release Travel Demand models that show travel behavior of the region. Using an MPO's data, this model and be validated to determine if  it is a realistic representation of travel behavior in the area.
+
+As was mentioned earlier, the Python extraction script is currently running to gather more Tweets to increase the observations in the dataset. With additional observations it is assumed that, even after filtering, the number of OD pairs will increase. With a sufficient dataset, regression can be performed to correlate and validate the model. 
+
+## Expanding Model Datasets
+In addition to increasing the Twitter data extraction duration, additional social media platforms could be incorporated into this model to provide a greater diversity of OD pairs. Platforms such as Facebook, Instagram, Foursquare, Yelp and other platforms could be beneficial additions to this study. 
+
+
+
+

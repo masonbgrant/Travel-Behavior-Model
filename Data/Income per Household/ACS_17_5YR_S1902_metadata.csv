@@ -1,0 +1,171 @@
+GEO.id,Id
+GEO.id2,Id2
+GEO.display-label,Geography
+HC01_EST_VC02,Number; Estimate; All households
+HC01_MOE_VC02,Number; Margin of Error; All households
+HC02_EST_VC02,Percent Distribution; Estimate; All households
+HC02_MOE_VC02,Percent Distribution; Margin of Error; All households
+HC03_EST_VC02,Mean income (dollars); Estimate; All households
+HC03_MOE_VC02,Mean income (dollars); Margin of Error; All households
+HC01_EST_VC03,Number; Estimate; All households - With earnings
+HC01_MOE_VC03,Number; Margin of Error; All households - With earnings
+HC02_EST_VC03,Percent Distribution; Estimate; All households - With earnings
+HC02_MOE_VC03,Percent Distribution; Margin of Error; All households - With earnings
+HC03_EST_VC03,Mean income (dollars); Estimate; All households - With earnings
+HC03_MOE_VC03,Mean income (dollars); Margin of Error; All households - With earnings
+HC01_EST_VC04,Number; Estimate; All households - With earnings - With wages or salary income
+HC01_MOE_VC04,Number; Margin of Error; All households - With earnings - With wages or salary income
+HC02_EST_VC04,Percent Distribution; Estimate; All households - With earnings - With wages or salary income
+HC02_MOE_VC04,Percent Distribution; Margin of Error; All households - With earnings - With wages or salary income
+HC03_EST_VC04,Mean income (dollars); Estimate; All households - With earnings - With wages or salary income
+HC03_MOE_VC04,Mean income (dollars); Margin of Error; All households - With earnings - With wages or salary income
+HC01_EST_VC05,Number; Estimate; All households - With earnings - With self-employment income
+HC01_MOE_VC05,Number; Margin of Error; All households - With earnings - With self-employment income
+HC02_EST_VC05,Percent Distribution; Estimate; All households - With earnings - With self-employment income
+HC02_MOE_VC05,Percent Distribution; Margin of Error; All households - With earnings - With self-employment income
+HC03_EST_VC05,Mean income (dollars); Estimate; All households - With earnings - With self-employment income
+HC03_MOE_VC05,Mean income (dollars); Margin of Error; All households - With earnings - With self-employment income
+HC01_EST_VC06,"Number; Estimate; All households - With interest, dividends, or net rental income"
+HC01_MOE_VC06,"Number; Margin of Error; All households - With interest, dividends, or net rental income"
+HC02_EST_VC06,"Percent Distribution; Estimate; All households - With interest, dividends, or net rental income"
+HC02_MOE_VC06,"Percent Distribution; Margin of Error; All households - With interest, dividends, or net rental income"
+HC03_EST_VC06,"Mean income (dollars); Estimate; All households - With interest, dividends, or net rental income"
+HC03_MOE_VC06,"Mean income (dollars); Margin of Error; All households - With interest, dividends, or net rental income"
+HC01_EST_VC07,Number; Estimate; All households - With Social Security income
+HC01_MOE_VC07,Number; Margin of Error; All households - With Social Security income
+HC02_EST_VC07,Percent Distribution; Estimate; All households - With Social Security income
+HC02_MOE_VC07,Percent Distribution; Margin of Error; All households - With Social Security income
+HC03_EST_VC07,Mean income (dollars); Estimate; All households - With Social Security income
+HC03_MOE_VC07,Mean income (dollars); Margin of Error; All households - With Social Security income
+HC01_EST_VC08,Number; Estimate; All households - With Supplemental Security Income (SSI)
+HC01_MOE_VC08,Number; Margin of Error; All households - With Supplemental Security Income (SSI)
+HC02_EST_VC08,Percent Distribution; Estimate; All households - With Supplemental Security Income (SSI)
+HC02_MOE_VC08,Percent Distribution; Margin of Error; All households - With Supplemental Security Income (SSI)
+HC03_EST_VC08,Mean income (dollars); Estimate; All households - With Supplemental Security Income (SSI)
+HC03_MOE_VC08,Mean income (dollars); Margin of Error; All households - With Supplemental Security Income (SSI)
+HC01_EST_VC09,Number; Estimate; All households - With cash public assistance income or Food Stamps/SNAP
+HC01_MOE_VC09,Number; Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP
+HC02_EST_VC09,Percent Distribution; Estimate; All households - With cash public assistance income or Food Stamps/SNAP
+HC02_MOE_VC09,Percent Distribution; Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP
+HC03_EST_VC09,Mean income (dollars); Estimate; All households - With cash public assistance income or Food Stamps/SNAP
+HC03_MOE_VC09,Mean income (dollars); Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP
+HC01_EST_VC10,Number; Estimate; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC01_MOE_VC10,Number; Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC02_EST_VC10,Percent Distribution; Estimate; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC02_MOE_VC10,Percent Distribution; Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC03_EST_VC10,Mean income (dollars); Estimate; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC03_MOE_VC10,Mean income (dollars); Margin of Error; All households - With cash public assistance income or Food Stamps/SNAP - With cash public assistance
+HC01_EST_VC11,Number; Estimate; All households - With retirement income
+HC01_MOE_VC11,Number; Margin of Error; All households - With retirement income
+HC02_EST_VC11,Percent Distribution; Estimate; All households - With retirement income
+HC02_MOE_VC11,Percent Distribution; Margin of Error; All households - With retirement income
+HC03_EST_VC11,Mean income (dollars); Estimate; All households - With retirement income
+HC03_MOE_VC11,Mean income (dollars); Margin of Error; All households - With retirement income
+HC01_EST_VC12,Number; Estimate; All households - With other types of income
+HC01_MOE_VC12,Number; Margin of Error; All households - With other types of income
+HC02_EST_VC12,Percent Distribution; Estimate; All households - With other types of income
+HC02_MOE_VC12,Percent Distribution; Margin of Error; All households - With other types of income
+HC03_EST_VC12,Mean income (dollars); Estimate; All households - With other types of income
+HC03_MOE_VC12,Mean income (dollars); Margin of Error; All households - With other types of income
+HC01_EST_VC15,Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC01_MOE_VC15,Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC02_EST_VC15,Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC02_MOE_VC15,Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC03_EST_VC15,Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC03_MOE_VC15,Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families
+HC01_EST_VC16,Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC01_MOE_VC16,Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC02_EST_VC16,Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC02_MOE_VC16,Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC03_EST_VC16,Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC03_MOE_VC16,Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - No workers
+HC01_EST_VC17,Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC01_MOE_VC17,Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC02_EST_VC17,Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC02_MOE_VC17,Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC03_EST_VC17,Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC03_MOE_VC17,Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 1 worker
+HC01_EST_VC18,"Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC01_MOE_VC18,"Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC02_EST_VC18,"Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC02_MOE_VC18,"Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC03_EST_VC18,"Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC03_MOE_VC18,"Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, husband and wife worked"
+HC01_EST_VC19,"Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC01_MOE_VC19,"Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC02_EST_VC19,"Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC02_MOE_VC19,"Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC03_EST_VC19,"Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC03_MOE_VC19,"Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 2 workers, other"
+HC01_EST_VC20,"Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC01_MOE_VC20,"Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC02_EST_VC20,"Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC02_MOE_VC20,"Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC03_EST_VC20,"Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC03_MOE_VC20,"Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, husband and wife worked"
+HC01_EST_VC21,"Number; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC01_MOE_VC21,"Number; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC02_EST_VC21,"Percent Distribution; Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC02_MOE_VC21,"Percent Distribution; Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC03_EST_VC21,"Mean income (dollars); Estimate; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC03_MOE_VC21,"Mean income (dollars); Margin of Error; FAMILY INCOME BY NUMBER OF WORKERS IN FAMILY - All families - 3 or more workers, other"
+HC01_EST_VC24,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC01_MOE_VC24,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC02_EST_VC24,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC02_MOE_VC24,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC03_EST_VC24,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC03_MOE_VC24,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population
+HC01_EST_VC26,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC01_MOE_VC26,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC02_EST_VC26,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC02_MOE_VC26,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC03_EST_VC26,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC03_MOE_VC26,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - White
+HC01_EST_VC27,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC01_MOE_VC27,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC02_EST_VC27,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC02_MOE_VC27,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC03_EST_VC27,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC03_MOE_VC27,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Black or African American
+HC01_EST_VC28,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC01_MOE_VC28,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC02_EST_VC28,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC02_MOE_VC28,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC03_EST_VC28,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC03_MOE_VC28,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - American Indian and Alaska Native
+HC01_EST_VC29,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC01_MOE_VC29,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC02_EST_VC29,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC02_MOE_VC29,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC03_EST_VC29,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC03_MOE_VC29,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Asian
+HC01_EST_VC30,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC01_MOE_VC30,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC02_EST_VC30,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC02_MOE_VC30,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC03_EST_VC30,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC03_MOE_VC30,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Native Hawaiian and Other Pacific Islander
+HC01_EST_VC31,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC01_MOE_VC31,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC02_EST_VC31,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC02_MOE_VC31,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC03_EST_VC31,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC03_MOE_VC31,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - One race-- - Some other race
+HC01_EST_VC32,Number; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC01_MOE_VC32,Number; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC02_EST_VC32,Percent Distribution; Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC02_MOE_VC32,Percent Distribution; Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC03_EST_VC32,Mean income (dollars); Estimate; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC03_MOE_VC32,Mean income (dollars); Margin of Error; PER CAPITA INCOME BY RACE AND HISPANIC OR LATINO ORIGIN - Total population - Two or more races
+HC01_EST_VC34,Number; Estimate; Hispanic or Latino origin (of any race)
+HC01_MOE_VC34,Number; Margin of Error; Hispanic or Latino origin (of any race)
+HC02_EST_VC34,Percent Distribution; Estimate; Hispanic or Latino origin (of any race)
+HC02_MOE_VC34,Percent Distribution; Margin of Error; Hispanic or Latino origin (of any race)
+HC03_EST_VC34,Mean income (dollars); Estimate; Hispanic or Latino origin (of any race)
+HC03_MOE_VC34,Mean income (dollars); Margin of Error; Hispanic or Latino origin (of any race)
+HC01_EST_VC35,"Number; Estimate; White alone, not Hispanic or Latino"
+HC01_MOE_VC35,"Number; Margin of Error; White alone, not Hispanic or Latino"
+HC02_EST_VC35,"Percent Distribution; Estimate; White alone, not Hispanic or Latino"
+HC02_MOE_VC35,"Percent Distribution; Margin of Error; White alone, not Hispanic or Latino"
+HC03_EST_VC35,"Mean income (dollars); Estimate; White alone, not Hispanic or Latino"
+HC03_MOE_VC35,"Mean income (dollars); Margin of Error; White alone, not Hispanic or Latino"

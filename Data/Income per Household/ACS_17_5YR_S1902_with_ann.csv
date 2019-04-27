@@ -1,0 +1,266 @@
+Id,Id2,Geography,Number; Estimate; All households,Mean income (dollars); Estimate; All households
+7950000US0600101,600101,"Alameda County (North)--Berkeley & Albany Cities PUMA, California",52795,116161
+7950000US0600102,600102,"Alameda County (Northwest)--Oakland (Northwest) & Emeryville Cities PUMA, California",73141,77699
+7950000US0600103,600103,"Alameda County (Northeast)--Oakland (East) & Piedmont Cities PUMA, California",55244,155001
+7950000US0600104,600104,"Alameda County (North Central)--Oakland City (South Central) PUMA, California",40543,60153
+7950000US0600105,600105,"Alameda County (West)--San Leandro, Alameda & Oakland (Southwest) Cities PUMA; California",64366,101125
+7950000US0600106,600106,"Alameda County (North Central)--Castro Valley, San Lorenzo & Ashland PUMA; California",48671,95224
+7950000US0600107,600107,"Alameda County (Central)--Hayward City PUMA, California",46770,95988
+7950000US0600108,600108,"Alameda County (Southwest)--Union City, Newark & Fremont (West) Cities PUMA; California",42232,123991
+7950000US0600109,600109,"Alameda County (South Central)--Fremont City (East) PUMA, California",65486,141220
+7950000US0600110,600110,"Alameda County (East)--Livermore, Pleasanton & Dublin Cities PUMA; California",79822,151928
+7950000US0600300,600300,"Alpine, Amador, Calaveras, Inyo, Mariposa, Mono & Tuolumne Counties PUMA; California",74927,73783
+7950000US0600701,600701,"Butte County (Northwest)--Chico City PUMA, California",45231,72866
+7950000US0600702,600702,"Butte County (Southeast)--Oroville City & Paradise Town PUMA, California",40936,58942
+7950000US0601100,601100,"Colusa, Glenn, Tehama & Trinity Counties PUMA; California",46157,60594
+7950000US0601301,601301,"Contra Costa County (Far Southwest)--Richmond (Southwest) & San Pablo Cities PUMA, California",38638,68988
+7950000US0601302,601302,"Contra Costa County (Far Northwest)--Richmond (North), Hercules & El Cerrito Cites PUMA; California",44832,110233
+7950000US0601303,601303,"Contra Costa County (Northwest)--Concord (West), Martinez & Pleasant Hill Cities PUMA; California",50599,101532
+7950000US0601304,601304,"Contra Costa County--Walnut Creek (West), Lafayette, Orinda Cities & Moraga Town PUMA; California",50864,184274
+7950000US0601305,601305,"Contra Costa County (South)--San Ramon City & Danville Town PUMA, California",44424,184199
+7950000US0601306,601306,"Contra Costa County (Central)--Concord (South), Walnut Creek (East) & Clayton Cities PUMA; California",46380,132713
+7950000US0601307,601307,"Contra Costa County (North Central)--Pittsburg & Concord (North & East) Cities PUMA, California",41598,85367
+7950000US0601308,601308,"Contra Costa County (Northeast)--Antioch City PUMA, California",35083,86564
+7950000US0601309,601309,"Contra Costa County (East)--Brentwood & Oakley Cities PUMA, California",37179,108107
+7950000US0601500,601500,"Del Norte, Lassen, Modoc, Plumas & Siskiyou Counties PUMA; California",50067,59659
+7950000US0601700,601700,"El Dorado County--El Dorado Hills PUMA, California",68084,99817
+7950000US0601901,601901,"Fresno County (West)--Selma, Kerman & Coalinga Cities PUMA; California",39220,59803
+7950000US0601902,601902,"Fresno County (North Central)--Fresno City (North) PUMA, California",67630,91132
+7950000US0601903,601903,"Fresno County (Central)--Fresno City (East Central) PUMA, California",32927,47073
+7950000US0601904,601904,"Fresno County (Central)--Fresno City (Southwest) PUMA, California",53339,51833
+7950000US0601905,601905,"Fresno County (Central)--Fresno City (Southeast) PUMA, California",30371,53098
+7950000US0601906,601906,"Fresno County (Central)--Clovis City PUMA, California",38373,90678
+7950000US0601907,601907,"Fresno County (East)--Sanger, Reedley & Parlier Cities PUMA; California",39964,69954
+7950000US0602300,602300,"Humboldt County PUMA, California",53966,60394
+7950000US0602500,602500,"Imperial County--El Centro City PUMA, California",45198,62145
+7950000US0602901,602901,"Kern County (West)--Delano, Wasco & Shafter Cities PUMA; California",51005,73741
+7950000US0602902,602902,"Kern County (Central)--Bakersfield City (West) PUMA, California",69196,89591
+7950000US0602903,602903,"Kern County (Central)--Bakersfield City (Northeast) PUMA, California",49212,55711
+7950000US0602904,602904,"Kern County (Central)--Bakersfield City (Southeast) PUMA, California",29389,48701
+7950000US0602905,602905,"Kern County (East)--Ridgecrest, Arvin, Tehachapi & California City Cities PUMA; California",66191,63659
+7950000US0603100,603100,"Kings County--Hanford City PUMA, California",42349,66431
+7950000US0603300,603300,"Lake & Mendocino Counties PUMA, California",60509,62039
+7950000US0603701,603701,"Los Angeles County (North/Unincorporated)--Castaic PUMA, California",41278,111671
+7950000US0603702,603702,"Los Angeles County (Northwest)--Santa Clarita City PUMA, California",63609,107765
+7950000US0603703,603703,"Los Angeles County (North Central)--Lancaster City PUMA, California",51465,62975
+7950000US0603704,603704,"Los Angeles County (North Central)--Palmdale City PUMA, California",47827,73195
+7950000US0603705,603705,"Los Angeles County (North)--LA City (Northwest/Chatsworth & Porter Ranch) PUMA, California",59463,105205
+7950000US0603706,603706,"Los Angeles County (North)--LA City (North Central/Granada Hills & Sylmar) PUMA, California",41142,93624
+7950000US0603707,603707,"Los Angeles County--LA (North Central/Arleta & Pacoima) & San Fernando Cities PUMA, California",35489,72136
+7950000US0603708,603708,"Los Angeles County (North)--LA City (Northeast/Sunland, Sun Valley & Tujunga) PUMA; California",41015,73819
+7950000US0603709,603709,"Los Angeles County (Central)--San Gabriel Valley Region (North) PUMA, California",39190,144255
+7950000US0603710,603710,"Los Angeles County--Baldwin Park, Azusa, Duarte & Irwindale Cities PUMA; California",45997,78601
+7950000US0603711,603711,"Los Angeles County (East Central)--Glendora, Claremont, San Dimas & La Verne Cities PUMA; California",56297,107259
+7950000US0603712,603712,"Los Angeles County (East Central)--Pomona City PUMA, California",38198,68145
+7950000US0603713,603713,"Los Angeles County (East Central)--Covina & Walnut Cities PUMA, California",33338,94937
+7950000US0603714,603714,"Los Angeles County--Diamond Bar, La Habra Heights (East) Cities & Rowland Heights PUMA; California",34169,104007
+7950000US0603715,603715,"Los Angeles County (East Central)--West Covina City PUMA, California",32361,85542
+7950000US0603716,603716,"Los Angeles County (East Central)--La Puente & Industry Cities PUMA, California",25307,76042
+7950000US0603717,603717,"Los Angeles County (East Central)--Arcadia, San Gabriel & Temple City Cities PUMA; California",62545,107340
+7950000US0603718,603718,"Los Angeles County (Central)--Pasadena City PUMA, California",54381,109250
+7950000US0603719,603719,"Los Angeles County (Central)--Glendale City PUMA, California",72351,86774
+7950000US0603720,603720,"Los Angeles County (Central)--Burbank City PUMA, California",47792,93791
+7950000US0603721,603721,"Los Angeles County (North)--LA City (Northeast/North Hollywood & Valley Village) PUMA, California",53393,69019
+7950000US0603722,603722,"Los Angeles County (Northwest)--LA City (North Central/Van Nuys & North Sherman Oaks) PUMA, California",60114,72856
+7950000US0603723,603723,"Los Angeles County (North)--LA City (North Central/Mission Hills & Panorama City) PUMA, California",39383,63730
+7950000US0603724,603724,"Los Angeles County (Northwest)--LA City (Northwest/Encino & Tarzana) PUMA, California",60990,101390
+7950000US0603725,603725,"Los Angeles County--LA City (Northwest/Canoga Park, Winnetka & Woodland Hills) PUMA; California",62896,100731
+7950000US0603726,603726,"Los Angeles County--Calabasas, Agoura Hills, Malibu & Westlake Village Cities PUMA; California",38233,203263
+7950000US0603727,603727,"Los Angeles County (Central)--LA City (Central/Pacific Palisades) PUMA, California",70974,186393
+7950000US0603728,603728,"Los Angeles County (Southwest)--Santa Monica City PUMA, California",52346,129462
+7950000US0603729,603729,"Los Angeles County (West Central)--LA City (West Central/Westwood & West Los Angeles) PUMA, California",87459,112102
+7950000US0603730,603730,"Los Angeles County (West Central)--LA City (Central/Hancock Park & Mid-Wilshire) PUMA, California",72692,105413
+7950000US0603731,603731,"Los Angeles County (Central)--West Hollywood & Beverly Hills Cities PUMA, California",59573,133729
+7950000US0603732,603732,"Los Angeles County (Central)--LA City (East Central/Hollywood) PUMA, California",77402,75501
+7950000US0603733,603733,"Los Angeles County (Central)--LA City (Central/Koreatown) PUMA, California",44504,48445
+7950000US0603734,603734,"Los Angeles County--LA City (East Central/Silver Lake, Echo Park & Westlake) PUMA; California",74893,68377
+7950000US0603735,603735,"Los Angeles County--LA City (Mount Washington, Highland Park & Glassell Park) PUMA; California",61861,78175
+7950000US0603736,603736,"Los Angeles County (Central)--Alhambra & South Pasadena Cities PUMA, California",41633,89665
+7950000US0603737,603737,"Los Angeles County (Central)--Monterey Park & Rosemead Cities PUMA, California",38562,71302
+7950000US0603738,603738,"Los Angeles County (Central)--El Monte & South El Monte Cities PUMA, California",34245,58103
+7950000US0603739,603739,"Los Angeles County (Southeast)--Whittier City & Hacienda Heights PUMA, California",51919,92848
+7950000US0603740,603740,"Los Angeles County (Central)--Pico Rivera & Montebello Cities PUMA, California",37728,69081
+7950000US0603741,603741,"Los Angeles County (Central)--Bell Gardens, Bell, Maywood, Cudahy & Commerce Cities PUMA; California",34818,49962
+7950000US0603742,603742,"Los Angeles County (Central)--Huntington Park City, Florence-Graham & Walnut Park PUMA; California",31624,49531
+7950000US0603743,603743,"Los Angeles County (Central)--East Los Angeles PUMA, California",31043,54092
+7950000US0603744,603744,"Los Angeles County (Central)--LA City (East Central/Central City & Boyle Heights) PUMA, California",60731,58242
+7950000US0603745,603745,"Los Angeles County (Central)--LA City (Southeast/East Vernon) PUMA, California",28305,42213
+7950000US0603746,603746,"Los Angeles County--LA City (Central/Univ. of Southern California & Exposition Park) PUMA, California",31791,45372
+7950000US0603747,603747,"Los Angeles County (Central)--LA City (Central/West Adams & Baldwin Hills) PUMA, California",60309,60210
+7950000US0603748,603748,"Los Angeles County--LA (Southwest/Marina del Rey & Westchester) & Culver City Cities PUMA, California",81717,126254
+7950000US0603749,603749,"Los Angeles County (Central)--Inglewood City PUMA, California",37620,61737
+7950000US0603750,603750,"Los Angeles County (South Central)--LA City (South Central/Westmont) PUMA, California",52320,50149
+7950000US0603751,603751,"Los Angeles County (South Central)--LA City (South Central/Watts) PUMA, California",38055,42445
+7950000US0603752,603752,"Los Angeles County (South)--South Gate & Lynwood Cities PUMA, California",40537,59627
+7950000US0603753,603753,"Los Angeles County (South)--Downey City PUMA, California",32307,83614
+7950000US0603754,603754,"Los Angeles County (Southeast)--La Mirada & Santa Fe Springs Cities PUMA, California",39561,86182
+7950000US0603755,603755,"Los Angeles County (Southeast)--Norwalk City PUMA, California",31742,77773
+7950000US0603756,603756,"Los Angeles County (Southeast)--Bellflower & Paramount Cities PUMA, California",33894,63955
+7950000US0603757,603757,"Los Angeles County (South Central)--Compton City & West Rancho Dominguez PUMA, California",39339,59211
+7950000US0603758,603758,"Los Angeles County (South Central)--Gardena, Lawndale Cities & West Athens PUMA; California",50706,63687
+7950000US0603759,603759,"Los Angeles County (South Central)--Hawthorne City PUMA, California",36438,66118
+7950000US0603760,603760,"Los Angeles County--Redondo Beach, Manhattan Beach & Hermosa Beach Cities PUMA; California",57145,164727
+7950000US0603761,603761,"Los Angeles County (South Central)--Torrance City PUMA, California",46847,103227
+7950000US0603762,603762,"Los Angeles County (South Central)--Carson City PUMA, California",32661,87207
+7950000US0603763,603763,"Los Angeles County (South Central)--Long Beach City (North) PUMA, California",44314,74054
+7950000US0603764,603764,"Los Angeles County (South)--Lakewood, Cerritos, Artesia & Hawaiian Gardens Cities PUMA; California",49707,97070
+7950000US0603765,603765,"Los Angeles County (Southeast)--Long Beach City (East) PUMA, California",53824,112408
+7950000US0603766,603766,"Los Angeles County (South)--Long Beach City (Southwest & Port) PUMA, California",34203,60769
+7950000US0603767,603767,"Los Angeles County (South)--LA City (South/San Pedro) PUMA, California",59320,72966
+7950000US0603768,603768,"Los Angeles County (Southwest)--Palos Verdes Peninsula PUMA, California",42577,151598
+7950000US0603769,603769,"Los Angeles County (Southeast)--Long Beach (Central) & Signal Hill Cities PUMA, California",37729,62865
+7950000US0603900,603900,"Madera County--Madera City PUMA, California",44458,65121
+7950000US0604101,604101,"Marin County (North & West)--Novato & San Rafael (North) Cities PUMA, California",44385,130987
+7950000US0604102,604102,"Marin County (Southeast)--San Rafael (South), Mill Valley & Sausalito Cities PUMA; California",60461,185273
+7950000US0604701,604701,"Merced County (West & South)--Los Banos & Livingston Cities PUMA, California",31831,67178
+7950000US0604702,604702,"Merced County (Northeast)--Merced & Atwater Cities PUMA, California",47430,62612
+7950000US0605301,605301,"Monterey County (North Central)--Seaside, Monterey, Marina & Pacific Grove Cities PUMA; California",64503,104909
+7950000US0605302,605302,"Monterey County (Northeast)--Salinas City PUMA, California",44261,71580
+7950000US0605303,605303,"Monterey (South & East) & San Benito Counties PUMA, California",34615,82355
+7950000US0605500,605500,"Napa County--Napa City PUMA, California",49044,111168
+7950000US0605700,605700,"Nevada & Sierra Counties PUMA, California",41594,83233
+7950000US0605901,605901,"Orange County (Southwest)--San Clemente, Laguna Niguel & San Juan Capistrano Cities PUMA; California",71105,130492
+7950000US0605902,605902,"Orange County (South Central)--Mission Viejo & Rancho Santa Margarita (West) Cities PUMA, California",38478,129678
+7950000US0605903,605903,"Orange County (West Central)--Newport Beach, Aliso Viejo & Laguna Hills Cities PUMA; California",87942,160843
+7950000US0605904,605904,"Orange County (Central)--Irvine City (Central) PUMA, California",84706,115936
+7950000US0605905,605905,"Orange County (Northeast)--Lake Forest, Irvine (North) Cities & Silverado PUMA; California",70838,125216
+7950000US0605906,605906,"Orange County (North)--Yorba Linda, La Habra & Brea Cities PUMA; California",60926,120221
+7950000US0605907,605907,"Orange County (North Central)--Fullerton & Placentia Cities PUMA, California",62447,97099
+7950000US0605908,605908,"Orange County (Northwest)--Buena Park, Cypress & Seal Beach Cities PUMA; California",60663,100109
+7950000US0605909,605909,"Orange County (North Central)--Anaheim City (West) PUMA, California",41745,73657
+7950000US0605910,605910,"Orange County (North Central)--Anaheim City (East) PUMA, California",56718,91641
+7950000US0605911,605911,"Orange County (Central)--Orange & Villa Park Cities PUMA, California",44464,116046
+7950000US0605912,605912,"Orange County (Northwest)--Westminster, Stanton & Garden Grove (West) Cities PUMA; California",51411,79673
+7950000US0605913,605913,"Orange County (Northwest)--Garden Grove City (East) PUMA, California",43062,76736
+7950000US0605914,605914,"Orange County (Northwest)--Huntington Beach City PUMA, California",75915,117265
+7950000US0605915,605915,"Orange County (Southeast)--Rancho Santa Margarita City (East) & Ladera Ranch PUMA, California",35555,173252
+7950000US0605916,605916,"Orange County (Central)--Santa Ana City (West) PUMA, California",34778,75094
+7950000US0605917,605917,"Orange County (Central)--Santa Ana City (East) PUMA, California",39201,70369
+7950000US0605918,605918,"Orange County (Central)--Costa Mesa & Fountain Valley Cities PUMA, California",65022,103611
+7950000US0606101,606101,"Placer County (Southwest)--Roseville City PUMA, California",50301,102021
+7950000US0606102,606102,"Placer County (Central)--Rocklin, Lincoln Cities & Loomis Town PUMA; California",43976,104985
+7950000US0606103,606103,"Placer County (East/High Country Region)--Auburn & Colfax Cities PUMA, California",44287,106804
+7950000US0606501,606501,"Riverside County (East)--Indio, Coachella, Blythe & La Quinta (East) Cities PUMA; California",57776,63383
+7950000US0606502,606502,"Riverside County (Central)--Cathedral City, Palm Springs & Rancho Mirage Cities PUMA; California",57939,77492
+7950000US0606503,606503,"Riverside County (Southwest)--Temecula City PUMA, California",42134,108605
+7950000US0606504,606504,"Riverside County (Southwest)--Murrieta & Wildomar Cities PUMA, California",40515,95028
+7950000US0606505,606505,"Riverside County (Southwest)--Menifee, Lake Elsinore & Canyon Lake Cities PUMA; California",59902,76216
+7950000US0606506,606506,"Riverside County (Southwest)--Hemet City & East Hemet PUMA, California",52208,66014
+7950000US0606507,606507,"Riverside County (North Central)--San Jacinto, Beaumont, Banning & Calimesa Cities PUMA; California",50406,67530
+7950000US0606508,606508,"Riverside County (Northwest)--Moreno Valley City PUMA, California",48050,72125
+7950000US0606509,606509,"Riverside County (West Central)--Perris City, Temescal Valley & Mead Valley PUMA; California",31307,74470
+7950000US0606510,606510,"Riverside County (Northwest)--Riverside City (East) PUMA, California",43927,85755
+7950000US0606511,606511,"Riverside County (Northwest)--Riverside City (West) PUMA, California",48766,67103
+7950000US0606512,606512,"Riverside County (West Central)--Corona City (South), Woodcrest & Home Gardens PUMA; California",31040,108995
+7950000US0606513,606513,"Riverside County (West Central)--Corona (Northwest) & Norco Cities PUMA, California",45402,87530
+7950000US0606514,606514,"Riverside County (Northwest)--Jurupa Valley & Eastvale Cities PUMA, California",39848,92350
+7950000US0606515,606515,"Riverside County--Palm Desert, La Quinta (West) & Desert Hot Springs Cities PUMA; California",62504,81767
+7950000US0606701,606701,"Sacramento County (North Central)--Citrus Heights City PUMA, California",42479,69556
+7950000US0606702,606702,"Sacramento County (Central)--Rancho Cordova City PUMA, California",42087,79426
+7950000US0606703,606703,"Sacramento County (North Central)--Arden-Arcade, Carmichael & Fair Oaks (West) PUMA; California",45691,96464
+7950000US0606704,606704,"Sacramento County (North Central)--North Highlands, Foothill Farms & McClellan Park PUMA; California",48075,55517
+7950000US0606705,606705,"Sacramento County (Northwest)--Sacramento City (Northwest/Natomas) PUMA, California",39767,82508
+7950000US0606706,606706,"Sacramento County (North)--Sacramento City (North), Antelope & Rio Linda PUMA; California",36618,65761
+7950000US0606707,606707,"Sacramento County (West)--Sacramento City (Central/Downtown & Midtown) PUMA, California",56082,87715
+7950000US0606708,606708,"Sacramento County--Sacramento City (Southeast/Fruitridge, Avondale & Depot Park) PUMA; California",46425,53687
+7950000US0606709,606709,"Sacramento County--Sacramento City (Southwest/Pocket, Meadowview & North Laguna) PUMA; California",48460,70518
+7950000US0606710,606710,"Sacramento County (Central)--Elk Grove City PUMA, California",49522,103309
+7950000US0606711,606711,"Sacramento County (South)--Galt, Isleton Cities & Delta Region PUMA; California",35651,90741
+7950000US0606712,606712,"Sacramento County (Northeast)--Folsom City, Orangevale & Fair Oaks (East) PUMA; California",41193,114003
+7950000US0607101,607101,"San Bernardino County (Northeast)--Twentynine Palms & Barstow Cities PUMA, California",51244,54774
+7950000US0607102,607102,"San Bernardino County (West Central)--Victorville & Adelanto Cities PUMA, California",44700,60238
+7950000US0607103,607103,"San Bernardino County (West Central)--Hesperia City & Apple Valley Town PUMA, California",52528,68276
+7950000US0607104,607104,"San Bernardino County (Southwest)--Phelan, Lake Arrowhead & Big Bear City PUMA; California",39133,75120
+7950000US0607105,607105,"San Bernardino County (Southwest)--Redlands & Yucaipa Cities PUMA, California",48268,86330
+7950000US0607106,607106,"San Bernardino County (Southwest)--Colton, Loma Linda & Grand Terrace Cities PUMA; California",32702,67428
+7950000US0607107,607107,"San Bernardino County (Southwest)--San Bernardino City (East) PUMA, California",31007,60243
+7950000US0607108,607108,"San Bernardino County (Southwest)--San Bernardino City (West) PUMA, California",46251,51094
+7950000US0607109,607109,"San Bernardino County (Southwest)--Rialto City PUMA, California",28657,70520
+7950000US0607110,607110,"San Bernardino County (Southwest)--Fontana City (East) PUMA, California",27506,59878
+7950000US0607111,607111,"San Bernardino County (Southwest)--Rancho Cucamonga City PUMA, California",55880,100133
+7950000US0607112,607112,"San Bernardino County (Southwest)--Upland & Montclair Cities PUMA, California",40447,81361
+7950000US0607113,607113,"San Bernardino County (Southwest)--Ontario City PUMA, California",49928,70649
+7950000US0607114,607114,"San Bernardino County (Southwest)--Chino & Chino Hills Cities PUMA, California",44702,105946
+7950000US0607115,607115,"San Bernardino County (Southwest)--Fontana City (West) PUMA, California",30689,90228
+7950000US0607301,607301,"San Diego County (Northwest)--Oceanside City & Camp Pendleton PUMA, California",62963,79046
+7950000US0607302,607302,"San Diego County (North & East)--Fallbrook, Alpine & Valley Center PUMA; California",40710,89328
+7950000US0607303,607303,"San Diego County (Northwest)--Vista City PUMA, California",34911,79273
+7950000US0607304,607304,"San Diego County (Northwest)--Carlsbad City PUMA, California",47509,124283
+7950000US0607305,607305,"San Diego County (Northwest)--San Marcos & Escondido (West) Cities PUMA, California",41414,85654
+7950000US0607306,607306,"San Diego County (Northwest)--Escondido City (East) PUMA, California",42133,84739
+7950000US0607307,607307,"San Diego County (Central)--Lakeside, Winter Gardens & Ramona PUMA; California",37261,93635
+7950000US0607308,607308,"San Diego County (Central)--San Diego (Northeast/Rancho Bernardo) & Poway Cities PUMA, California",46861,127412
+7950000US0607309,607309,"San Diego County (West)--San Diego (Northwest/San Dieguito) & Encinitas Cities PUMA, California",63545,150428
+7950000US0607310,607310,"San Diego County (West)--San Diego City (Southwest/Central Coastal) PUMA, California",72041,129355
+7950000US0607311,607311,"San Diego County (West Central)--San Diego City (Northwest/Del Mar Mesa) PUMA, California",40310,164213
+7950000US0607312,607312,"San Diego County (Central)--San Diego City (Central/Mira Mesa & University Heights) PUMA, California",40695,93516
+7950000US0607313,607313,"San Diego County (Central)--El Cajon & Santee Cities PUMA, California",59915,78095
+7950000US0607314,607314,"San Diego County (Central)--San Diego (East Central/Navajo) & La Mesa Cities PUMA, California",60243,97708
+7950000US0607315,607315,"San Diego County (West Central)--San Diego City (Central/Clairemont & Kearny Mesa) PUMA, California",62956,87379
+7950000US0607316,607316,"San Diego County (South Central)--San Diego City (Central/Centre City & Balboa Park) PUMA, California",79037,85714
+7950000US0607317,607317,"San Diego County (South Central)--San Diego City (Central/Mid-City) PUMA, California",58320,64138
+7950000US0607318,607318,"San Diego County (South)--San Diego City (Southeast/Encanto & Skyline) PUMA, California",43599,67436
+7950000US0607319,607319,"San Diego County (South Central)--Lemon Grove City, La Presa & Spring Valley PUMA; California",42473,87936
+7950000US0607320,607320,"San Diego County (Southwest)--Sweetwater Region--Chula Vista City (East) PUMA, California",43795,109056
+7950000US0607321,607321,"San Diego County (Southwest)--Chula Vista (West) & National City Cities PUMA, California",52662,59539
+7950000US0607322,607322,"San Diego County (South)--San Diego City (South/Otay Mesa & South Bay) PUMA, California",38386,66773
+7950000US0607501,607501,"San Francisco County (North & West)--Richmond District PUMA, California",64841,134429
+7950000US0607502,607502,"San Francisco County (North & East)--North Beach & Chinatown PUMA, California",59323,153552
+7950000US0607503,607503,"San Francisco County (Central)--South of Market & Potrero PUMA, California",66325,123920
+7950000US0607504,607504,"San Francisco County (Central)--Inner Mission & Castro PUMA, California",52650,170211
+7950000US0607505,607505,"San Francisco County (Central)--Sunset District (North) PUMA, California",43560,141532
+7950000US0607506,607506,"San Francisco County (South Central)--Sunset District (South) PUMA, California",39394,134817
+7950000US0607507,607507,"San Francisco County (South Central)--Bayview & Hunters Point PUMA, California",32679,90038
+7950000US0607701,607701,"San Joaquin County (Central)--Stockton City (North) PUMA, California",59020,78248
+7950000US0607702,607702,"San Joaquin County (Central)--Stockton City (South) PUMA, California",46087,52492
+7950000US0607703,607703,"San Joaquin County (South)--Tracy, Manteca & Lathrop Cities PUMA; California",63295,90593
+7950000US0607704,607704,"San Joaquin County (North)--Lodi, Ripon & Escalon Cities PUMA; California",55406,79926
+7950000US0607901,607901,"San Luis Obispo County (West)--Coastal Region PUMA, California",66264,85628
+7950000US0607902,607902,"San Luis Obispo County (East)--Inland Region PUMA, California",38780,91870
+7950000US0608101,608101,"San Mateo County (North Central)--Daly City, Pacifica Cities & Colma Town PUMA; California",45471,110459
+7950000US0608102,608102,"San Mateo County (North Central)--South San Francisco, San Bruno & Brisbane Cities PUMA; California",40000,112799
+7950000US0608103,608103,"San Mateo County (Central)--San Mateo (North), Burlingame & Millbrae Cities PUMA; California",40530,169929
+7950000US0608104,608104,"San Mateo County (South & West)--San Mateo (South) & Half Moon Bay Cities PUMA, California",47801,158736
+7950000US0608105,608105,"San Mateo County (East Central)--Redwood City, San Carlos & Belmont Cities PUMA; California",50422,159129
+7950000US0608106,608106,"San Mateo County (Southeast)--Menlo Park, East Palo Alto Cities & Atherton Town PUMA; California",37572,202790
+7950000US0608301,608301,"Santa Barbara County (Northwest)--Santa Maria City & Orcutt PUMA, California",36449,75631
+7950000US0608302,608302,"Santa Barbara County (North)--Lompoc, Guadalupe, Solvang & Buellton Cities PUMA; California",33807,85135
+7950000US0608303,608303,"Santa Barbara County--South Coast Region PUMA, California",73759,113046
+7950000US0608501,608501,"Santa Clara County (Northwest)--Mountain View, Palo Alto & Los Altos Cities PUMA; California",78941,200335
+7950000US0608502,608502,"Santa Clara County (Northwest)--Sunnyvale & San Jose (North) Cities PUMA, California",58105,148442
+7950000US0608503,608503,"Santa Clara County (Northwest)--San Jose (Northwest) & Santa Clara Cities PUMA, California",53357,132550
+7950000US0608504,608504,"Santa Clara County (North Central)--Milpitas & San Jose (Northeast) Cities PUMA, California",40921,127401
+7950000US0608505,608505,"Santa Clara County (North Central)--San Jose City (East Central) & Alum Rock PUMA, California",29553,115025
+7950000US0608506,608506,"Santa Clara County (East)--Gilroy, Morgan Hill & San Jose (South) Cities PUMA; California",37328,127886
+7950000US0608507,608507,"Santa Clara County (Southwest)--Cupertino, Saratoga Cities & Los Gatos Town PUMA; California",50039,202919
+7950000US0608508,608508,"Santa Clara County (Central)--San Jose (West Central) & Campbell Cities PUMA, California",50135,135745
+7950000US0608509,608509,"Santa Clara County (Central)--San Jose City (Northwest) PUMA, California",46479,106094
+7950000US0608510,608510,"Santa Clara County (Central)--San Jose City (Central) PUMA, California",53869,116310
+7950000US0608511,608511,"Santa Clara County (Central)--San Jose City (South Central/Branham) & Cambrian Park PUMA, California",37290,127844
+7950000US0608512,608512,"Santa Clara County (Central)--San Jose City (Southwest/Almaden Valley) PUMA, California",36035,158311
+7950000US0608513,608513,"Santa Clara County (Central)--San Jose City (Southeast/Evergreen) PUMA, California",31911,142388
+7950000US0608514,608514,"Santa Clara County (Central)--San Jose City (East Central/East Valley) PUMA, California",26488,83213
+7950000US0608701,608701,"Santa Cruz County (North)--Watsonville & Scotts Valley Cities PUMA, California",47720,107516
+7950000US0608702,608702,"Santa Cruz County (South & Coastal)--Santa Cruz City PUMA, California",47816,95355
+7950000US0608900,608900,"Shasta County--Redding City PUMA, California",70486,65004
+7950000US0609501,609501,"Solano County (Southwest)--Vallejo & Benicia Cities PUMA, California",53449,85527
+7950000US0609502,609502,"Solano County (Central)--Fairfield & Suisun City Cities PUMA, California",46984,94720
+7950000US0609503,609503,"Solano County (Northeast)--Vacaville & Dixon Cities PUMA, California",46919,93423
+7950000US0609701,609701,"Sonoma County (North)--Windsor Town, Healdsburg & Sonoma Cities PUMA; California",74513,107173
+7950000US0609702,609702,"Sonoma County (South)--Petaluma, Rohnert Park & Cotati Cities PUMA; California",46054,95305
+7950000US0609703,609703,"Sonoma County (Central)--Santa Rosa City PUMA, California",69491,86328
+7950000US0609901,609901,"Stanislaus County (Southwest)--Ceres, Patterson & Newman Cities PUMA; California",33291,70015
+7950000US0609902,609902,"Stanislaus County (Central)--Modesto City (West) PUMA, California",38705,63900
+7950000US0609903,609903,"Stanislaus County (Northeast)--Turlock, Riverbank, Oakdale & Waterford Cities PUMA; California",60032,78092
+7950000US0609904,609904,"Stanislaus County (Central)--Modesto City (East) PUMA, California",39296,74044
+7950000US0610100,610100,"Sutter & Yuba Counties--Yuba City PUMA, California",58068,68780
+7950000US0610701,610701,"Tulare County (Northwest)--Visalia City PUMA, California",45696,72654
+7950000US0610702,610702,"Tulare County (West Central)--Tulare & Porterville Cities PUMA, California",44546,60002
+7950000US0610703,610703,"Tulare County (Outside Visalia, Tulare & Porterville Cities) PUMA; California",44902,54119
+7950000US0611101,611101,"Ventura County (Southeast)--Simi Valley City PUMA, California",38308,113339
+7950000US0611102,611102,"Ventura County (Southeast)--Thousand Oaks City PUMA, California",54782,140406
+7950000US0611103,611103,"Ventura County (Southwest)--Oxnard & Port Hueneme Cities PUMA, California",51065,82360
+7950000US0611104,611104,"Ventura County (Southwest)--San Buenaventura (Ventura) City PUMA, California",45101,90657
+7950000US0611105,611105,"Ventura County (North)--Santa Paula, Fillmore & Ojai Cities PUMA; California",38113,92254
+7950000US0611106,611106,"Ventura County (South Central)--Camarillo & Moorpark Cities PUMA, California",42677,123867
+7950000US0611300,611300,"Yolo County--Davis, Woodland & West Sacramento Cities PUMA; California",72845,86723
